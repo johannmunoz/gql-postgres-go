@@ -1,3 +1,4 @@
 .env
 server/graph/generated/generated.go
 server/graph/model/models_gen.go
+**/node_modules
