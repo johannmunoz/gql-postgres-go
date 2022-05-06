@@ -7,11 +7,11 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/johannmunoz/gql_postgres_go/graph"
-	"github.com/johannmunoz/gql_postgres_go/graph/generated"
+	"github.com/johannmunoz/gql_postgres_go/cmd/gql_postgres_go/graph"
+	"github.com/johannmunoz/gql_postgres_go/cmd/gql_postgres_go/graph/generated"
 )
 
-const defaultPort = "4000"
+const defaultPort = "8080"
 
 func main() {
 	port := os.Getenv("PORT")
