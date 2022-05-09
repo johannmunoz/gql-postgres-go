@@ -8,14 +8,14 @@ function cleanup {
 trap cleanup EXIT
 
 go build -o /tmp/srv-accounts ./cmd/accounts
-# go build -o /tmp/srv-products ./products
+go build -o /tmp/srv-products ./cmd/products
 # go build -o /tmp/srv-reviews ./reviews
 
 /tmp/srv-accounts &
 ACCOUNTS_PID=$!
 
-# /tmp/srv-products &
-# PRODUCTS_PID=$!
+/tmp/srv-products &
+PRODUCTS_PID=$!
 
 # /tmp/srv-reviews &
 # REVIEWS_PID=$!
