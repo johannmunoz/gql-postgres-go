@@ -9,7 +9,7 @@ trap cleanup EXIT
 
 go build -o /tmp/srv-accounts ./cmd/accounts
 go build -o /tmp/srv-products ./cmd/products
-# go build -o /tmp/srv-reviews ./reviews
+go build -o /tmp/srv-reviews ./cmd/reviews
 
 /tmp/srv-accounts &
 ACCOUNTS_PID=$!
@@ -17,8 +17,8 @@ ACCOUNTS_PID=$!
 /tmp/srv-products &
 PRODUCTS_PID=$!
 
-# /tmp/srv-reviews &
-# REVIEWS_PID=$!
+/tmp/srv-reviews &
+REVIEWS_PID=$!
 
 sleep 1
 
