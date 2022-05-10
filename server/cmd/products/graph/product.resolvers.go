@@ -6,15 +6,9 @@ package graph
 import (
 	"context"
 
-	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph/generated"
 	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph/model"
 )
 
 func (r *queryResolver) TopProducts(ctx context.Context, first *int) ([]*model.Product, error) {
 	return hats, nil
 }
-
-// Query returns generated.QueryResolver implementation.
-func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
-
-type queryResolver struct{ *Resolver }

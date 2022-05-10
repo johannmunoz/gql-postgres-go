@@ -9,12 +9,16 @@ type Manufacturer struct {
 
 func (Manufacturer) IsEntity() {}
 
+type NewManufaturer struct {
+	Name string `json:"name"`
+}
+
 type Product struct {
 	ID           string        `json:"id"`
-	Manufacturer *Manufacturer `json:"manufacturer"`
 	Upc          string        `json:"upc"`
 	Name         string        `json:"name"`
 	Price        int           `json:"price"`
+	Manufacturer *Manufacturer `json:"manufacturer"`
 }
 
 func (Product) IsEntity() {}

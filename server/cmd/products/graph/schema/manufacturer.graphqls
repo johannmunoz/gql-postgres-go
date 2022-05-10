@@ -1,0 +1,21 @@
+extend type Query {
+  manufacturers: [Manufacturer]
+  manufacturer(id: String!): Manufacturer
+}
+
+extend type Mutation {
+  manufacturerCreate(input: NewManufaturer): [Manufacturer]
+}
+
+extend type Product {
+  manufacturer: Manufacturer!
+}
+
+type Manufacturer @key(fields: "id") {
+  id: String!
+  name: String!
+}
+
+input NewManufaturer {
+  name: String!
+}
