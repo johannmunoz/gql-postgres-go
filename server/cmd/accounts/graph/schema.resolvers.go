@@ -14,14 +14,14 @@ import (
 
 func (r *mutationResolver) UserCreate(ctx context.Context, input model.NewUser) (*ent.User, error) {
 	return r.client.User.Create().SetEmail(input.Email).SetUsername(input.Username).Save(ctx)
-	// if err != nil {
-	// 	log.Fatalf("failed creating a todo: %v", err)
-	// }
-	// return user, nil
 }
 
 func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) Users(ctx context.Context) ([]*ent.User, error) {
+	return r.client.User.Query().All(ctx)
 }
 
 func (r *userResolver) ID(ctx context.Context, obj *ent.User) (string, error) {
