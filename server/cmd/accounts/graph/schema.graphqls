@@ -1,15 +1,18 @@
 extend type Query {
-    me: User
+  me: User
 }
 
-type EmailHost @key(fields: "id") {
-    id: String!
-    name: String!
+extend type Mutation {
+  userCreate(input: NewUser!): User
 }
 
 type User @key(fields: "id") {
-    id: ID!
-    host: EmailHost!
-    email: String!
-    username: String!
+  id: ID!
+  email: String!
+  username: String!
+}
+
+input NewUser {
+  email: String!
+  username: String!
 }

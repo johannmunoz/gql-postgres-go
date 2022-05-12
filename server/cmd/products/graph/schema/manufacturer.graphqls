@@ -4,7 +4,7 @@ extend type Query {
 }
 
 extend type Mutation {
-  manufacturerCreate(input: NewManufaturer): [Manufacturer]
+  manufacturerCreate(input: NewManufaturer): Manufacturer
 }
 
 extend type Product {

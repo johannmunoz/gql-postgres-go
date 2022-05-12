@@ -4,16 +4,11 @@ type Review {
     product: Product!
 }
 
-extend type EmailHost @key(fields: "id") {
-    id: String! @external
-}
-
 extend type User @key(fields: "id") {
     id: ID! @external
-    host: EmailHost! @external
     email: String! @external
     username: String! @external
-    reviews: [Review] @requires(fields: "host {id} email")
+    reviews: [Review]
 }
 
 extend type Manufacturer @key(fields: "id") {
