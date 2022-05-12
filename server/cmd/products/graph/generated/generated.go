@@ -88,7 +88,7 @@ type EntityResolver interface {
 	FindProductByUpc(ctx context.Context, upc string) (*model.Product, error)
 }
 type MutationResolver interface {
-	ManufacturerCreate(ctx context.Context, input *model.NewManufaturer) ([]*model.Manufacturer, error)
+	ManufacturerCreate(ctx context.Context, input *model.NewManufaturer) (*model.Manufacturer, error)
 }
 type QueryResolver interface {
 	Manufacturers(ctx context.Context) ([]*model.Manufacturer, error)
@@ -340,7 +340,7 @@ var sources = []*ast.Source{
 }
 
 extend type Mutation {
-  manufacturerCreate(input: NewManufaturer): [Manufacturer]
+  manufacturerCreate(input: NewManufaturer): Manufacturer
 }
 
 extend type Product {
@@ -879,9 +879,9 @@ func (ec *executionContext) _Mutation_manufacturerCreate(ctx context.Context, fi
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Manufacturer)
+	res := resTmp.(*model.Manufacturer)
 	fc.Result = res
-	return ec.marshalOManufacturer2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐManufacturer(ctx, field.Selections, res)
+	return ec.marshalOManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐManufacturer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_manufacturerCreate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {

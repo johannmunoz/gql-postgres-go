@@ -44,10 +44,6 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
-	EmailHost struct {
-		ID func(childComplexity int) int
-	}
-
 	Entity struct {
 		FindProductByManufacturerIDAndID func(childComplexity int, manufacturerID string, id string) int
 		FindUserByID                     func(childComplexity int, id string) int
@@ -76,7 +72,6 @@ type ComplexityRoot struct {
 
 	User struct {
 		Email    func(childComplexity int) int
-		Host     func(childComplexity int) int
 		ID       func(childComplexity int) int
 		Reviews  func(childComplexity int) int
 		Username func(childComplexity int) int
@@ -106,13 +101,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
-
-	case "EmailHost.id":
-		if e.complexity.EmailHost.ID == nil {
-			break
-		}
-
-		return e.complexity.EmailHost.ID(childComplexity), true
 
 	case "Entity.findProductByManufacturerIDAndID":
 		if e.complexity.Entity.FindProductByManufacturerIDAndID == nil {
@@ -213,13 +201,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Email(childComplexity), true
 
-	case "User.host":
-		if e.complexity.User.Host == nil {
-			break
-		}
-
-		return e.complexity.User.Host(childComplexity), true
-
 	case "User.id":
 		if e.complexity.User.ID == nil {
 			break
@@ -306,16 +287,11 @@ var sources = []*ast.Source{
     product: Product!
 }
 
-extend type EmailHost @key(fields: "id") {
-    id: String! @external
-}
-
 extend type User @key(fields: "id") {
     id: ID! @external
-    host: EmailHost! @external
     email: String! @external
     username: String! @external
-    reviews: [Review] @requires(fields: "host {id} email")
+    reviews: [Review]
 }
 
 extend type Manufacturer @key(fields: "id") {
@@ -341,7 +317,7 @@ extend type Product @key(fields: " manufacturer{  id} id") {
 `, BuiltIn: true},
 	{Name: "federation/entity.graphql", Input: `
 # a union of all types that use the @key directive
-union _Entity = EmailHost | Manufacturer | Product | User
+union _Entity = Manufacturer | Product | User
 
 # fake type to build resolver interfaces for users to implement
 type Entity {
@@ -473,50 +449,6 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _EmailHost_id(ctx context.Context, field graphql.CollectedField, obj *model.EmailHost) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_EmailHost_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_EmailHost_id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "EmailHost",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Entity_findProductByManufacturerIDAndID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Entity_findProductByManufacturerIDAndID(ctx, field)
 	if err != nil {
@@ -621,8 +553,6 @@ func (ec *executionContext) fieldContext_Entity_findUserByID(ctx context.Context
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
-			case "host":
-				return ec.fieldContext_User_host(ctx, field)
 			case "email":
 				return ec.fieldContext_User_email(ctx, field)
 			case "username":
@@ -1149,8 +1079,6 @@ func (ec *executionContext) fieldContext_Review_author(ctx context.Context, fiel
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_User_id(ctx, field)
-			case "host":
-				return ec.fieldContext_User_host(ctx, field)
 			case "email":
 				return ec.fieldContext_User_email(ctx, field)
 			case "username":
@@ -1255,54 +1183,6 @@ func (ec *executionContext) fieldContext_User_id(ctx context.Context, field grap
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_host(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_host(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Host, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.EmailHost)
-	fc.Result = res
-	return ec.marshalNEmailHost2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋgraphᚋmodelᚐEmailHost(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_User_host(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_EmailHost_id(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type EmailHost", field.Name)
 		},
 	}
 	return fc, nil
@@ -3267,13 +3147,6 @@ func (ec *executionContext) __Entity(ctx context.Context, sel ast.SelectionSet, 
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.EmailHost:
-		return ec._EmailHost(ctx, sel, &obj)
-	case *model.EmailHost:
-		if obj == nil {
-			return graphql.Null
-		}
-		return ec._EmailHost(ctx, sel, obj)
 	case model.Manufacturer:
 		return ec._Manufacturer(ctx, sel, &obj)
 	case *model.Manufacturer:
@@ -3303,34 +3176,6 @@ func (ec *executionContext) __Entity(ctx context.Context, sel ast.SelectionSet, 
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
-
-var emailHostImplementors = []string{"EmailHost", "_Entity"}
-
-func (ec *executionContext) _EmailHost(ctx context.Context, sel ast.SelectionSet, obj *model.EmailHost) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, emailHostImplementors)
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("EmailHost")
-		case "id":
-
-			out.Values[i] = ec._EmailHost_id(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
 
 var entityImplementors = []string{"Entity"}
 
@@ -3618,13 +3463,6 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 
 			out.Values[i] = ec._User_id(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "host":
-
-			out.Values[i] = ec._User_host(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
 				invalids++
@@ -4014,16 +3852,6 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) marshalNEmailHost2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋgraphᚋmodelᚐEmailHost(ctx context.Context, sel ast.SelectionSet, v *model.EmailHost) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._EmailHost(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {

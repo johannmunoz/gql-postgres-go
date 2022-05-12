@@ -2,12 +2,6 @@
 
 package model
 
-type EmailHost struct {
-	ID string `json:"id"`
-}
-
-func (EmailHost) IsEntity() {}
-
 type Manufacturer struct {
 	ID string `json:"id"`
 }
@@ -29,11 +23,10 @@ type Review struct {
 }
 
 type User struct {
-	ID       string     `json:"id"`
-	Host     *EmailHost `json:"host"`
-	Email    string     `json:"email"`
-	Username string     `json:"username"`
-	Reviews  []*Review  `json:"reviews"`
+	ID       string    `json:"id"`
+	Email    string    `json:"email"`
+	Username string    `json:"username"`
+	Reviews  []*Review `json:"reviews"`
 }
 
 func (User) IsEntity() {}

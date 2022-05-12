@@ -121,14 +121,6 @@ func (ec *executionContext) __resolve_entities(ctx context.Context, representati
 					return fmt.Errorf(`resolving Entity "User": %w`, err)
 				}
 
-				entity.Host.ID, err = ec.unmarshalNString2string(ctx, rep["host"].(map[string]interface{})["id"])
-				if err != nil {
-					return err
-				}
-				entity.Email, err = ec.unmarshalNString2string(ctx, rep["email"])
-				if err != nil {
-					return err
-				}
 				list[idx[i]] = entity
 				return nil
 			}

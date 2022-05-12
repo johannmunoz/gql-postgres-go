@@ -5,33 +5,18 @@ package graph
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/graph/generated"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/graph/model"
 )
 
 func (r *entityResolver) FindProductByManufacturerIDAndID(ctx context.Context, manufacturerID string, id string) (*model.Product, error) {
-	var productReviews []*model.Review
-
-	for _, review := range reviews {
-		if review.Product.ID == id && review.Product.Manufacturer.ID == manufacturerID {
-			productReviews = append(productReviews, review)
-		}
-	}
-	return &model.Product{
-		ID: id,
-		Manufacturer: &model.Manufacturer{
-			ID: manufacturerID,
-		},
-		Reviews: productReviews,
-	}, nil
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *entityResolver) FindUserByID(ctx context.Context, id string) (*model.User, error) {
-	return &model.User{
-		ID:   id,
-		Host: &model.EmailHost{},
-	}, nil
+	panic(fmt.Errorf("not implemented"))
 }
 
 // Entity returns generated.EntityResolver implementation.

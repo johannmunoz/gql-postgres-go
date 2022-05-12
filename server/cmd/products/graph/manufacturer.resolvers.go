@@ -11,7 +11,7 @@ import (
 	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph/model"
 )
 
-func (r *mutationResolver) ManufacturerCreate(ctx context.Context, input *model.NewManufaturer) ([]*model.Manufacturer, error) {
+func (r *mutationResolver) ManufacturerCreate(ctx context.Context, input *model.NewManufaturer) (*model.Manufacturer, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
