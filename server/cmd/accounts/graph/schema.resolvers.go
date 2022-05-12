@@ -5,24 +5,38 @@ package graph
 
 import (
 	"context"
+	"fmt"
 
-	generated1 "github.com/johannmunoz/gql_postgres_go/cmd/accounts/graph/generated"
+	"github.com/johannmunoz/gql_postgres_go/cmd/accounts/ent"
+	"github.com/johannmunoz/gql_postgres_go/cmd/accounts/graph/generated"
 	"github.com/johannmunoz/gql_postgres_go/cmd/accounts/graph/model"
 )
 
-func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	return &model.User{
-		ID: "1234",
-		Host: &model.EmailHost{
-			ID:   "4567",
-			Name: "Email Host 4567",
-		},
-		Email:    "me@example.com",
-		Username: "Me",
-	}, nil
+func (r *mutationResolver) UserCreate(ctx context.Context, input model.NewUser) (*ent.User, error) {
+	return r.client.User.Create().SetEmail(input.Email).SetUsername(input.Username).Save(ctx)
+	// if err != nil {
+	// 	log.Fatalf("failed creating a todo: %v", err)
+	// }
+	// return user, nil
 }
 
-// Query returns generated1.QueryResolver implementation.
-func (r *Resolver) Query() generated1.QueryResolver { return &queryResolver{r} }
+func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
+	panic(fmt.Errorf("not implemented"))
+}
 
+func (r *userResolver) ID(ctx context.Context, obj *ent.User) (string, error) {
+	return obj.ID.String(), nil
+}
+
+// Mutation returns generated.MutationResolver implementation.
+func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
+
+// Query returns generated.QueryResolver implementation.
+func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
+
+// User returns generated.UserResolver implementation.
+func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
+
+type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type userResolver struct{ *Resolver }

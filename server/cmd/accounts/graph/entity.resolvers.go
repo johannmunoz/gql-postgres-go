@@ -5,28 +5,14 @@ package graph
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/johannmunoz/gql_postgres_go/cmd/accounts/ent"
 	"github.com/johannmunoz/gql_postgres_go/cmd/accounts/graph/generated"
-	"github.com/johannmunoz/gql_postgres_go/cmd/accounts/graph/model"
 )
 
-func (r *entityResolver) FindEmailHostByID(ctx context.Context, id string) (*model.EmailHost, error) {
-	return &model.EmailHost{
-		ID:   id,
-		Name: "Email Host " + id,
-	}, nil
-}
-
-func (r *entityResolver) FindUserByID(ctx context.Context, id string) (*model.User, error) {
-	name := "User " + id
-	if id == "1234" {
-		name = "Me"
-	}
-
-	return &model.User{
-		ID:       id,
-		Username: name,
-	}, nil
+func (r *entityResolver) FindUserByID(ctx context.Context, id string) (*ent.User, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 // Entity returns generated.EntityResolver implementation.
