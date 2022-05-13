@@ -14,6 +14,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/99designs/gqlgen/plugin/federation/fedruntime"
+	"github.com/johannmunoz/gql_postgres_go/cmd/products/ent"
 	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
@@ -38,7 +39,9 @@ type Config struct {
 
 type ResolverRoot interface {
 	Entity() EntityResolver
+	Manufacturer() ManufacturerResolver
 	Mutation() MutationResolver
+	Product() ProductResolver
 	Query() QueryResolver
 }
 
@@ -47,9 +50,8 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Entity struct {
-		FindManufacturerByID             func(childComplexity int, id string) int
-		FindProductByManufacturerIDAndID func(childComplexity int, manufacturerID string, id string) int
-		FindProductByUpc                 func(childComplexity int, upc string) int
+		FindManufacturerByID func(childComplexity int, id string) int
+		FindProductByID      func(childComplexity int, id string) int
 	}
 
 	Manufacturer struct {
@@ -59,6 +61,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		ManufacturerCreate func(childComplexity int, input *model.NewManufaturer) int
+		ProductCreate      func(childComplexity int, input *model.NewProduct) int
 	}
 
 	Product struct {
@@ -72,6 +75,8 @@ type ComplexityRoot struct {
 	Query struct {
 		Manufacturer       func(childComplexity int, id string) int
 		Manufacturers      func(childComplexity int) int
+		Product            func(childComplexity int, id string) int
+		Products           func(childComplexity int) int
 		TopProducts        func(childComplexity int, first *int) int
 		__resolve__service func(childComplexity int) int
 		__resolve_entities func(childComplexity int, representations []map[string]interface{}) int
@@ -83,17 +88,27 @@ type ComplexityRoot struct {
 }
 
 type EntityResolver interface {
-	FindManufacturerByID(ctx context.Context, id string) (*model.Manufacturer, error)
-	FindProductByManufacturerIDAndID(ctx context.Context, manufacturerID string, id string) (*model.Product, error)
-	FindProductByUpc(ctx context.Context, upc string) (*model.Product, error)
+	FindManufacturerByID(ctx context.Context, id string) (*ent.Manufacturer, error)
+	FindProductByID(ctx context.Context, id string) (*ent.Product, error)
+}
+type ManufacturerResolver interface {
+	ID(ctx context.Context, obj *ent.Manufacturer) (string, error)
 }
 type MutationResolver interface {
-	ManufacturerCreate(ctx context.Context, input *model.NewManufaturer) (*model.Manufacturer, error)
+	ManufacturerCreate(ctx context.Context, input *model.NewManufaturer) (*ent.Manufacturer, error)
+	ProductCreate(ctx context.Context, input *model.NewProduct) (*ent.Product, error)
+}
+type ProductResolver interface {
+	ID(ctx context.Context, obj *ent.Product) (string, error)
+
+	Manufacturer(ctx context.Context, obj *ent.Product) (*ent.Manufacturer, error)
 }
 type QueryResolver interface {
-	Manufacturers(ctx context.Context) ([]*model.Manufacturer, error)
-	Manufacturer(ctx context.Context, id string) (*model.Manufacturer, error)
-	TopProducts(ctx context.Context, first *int) ([]*model.Product, error)
+	Manufacturers(ctx context.Context) ([]*ent.Manufacturer, error)
+	Manufacturer(ctx context.Context, id string) (*ent.Manufacturer, error)
+	TopProducts(ctx context.Context, first *int) ([]*ent.Product, error)
+	Products(ctx context.Context) ([]*ent.Product, error)
+	Product(ctx context.Context, id string) (*ent.Product, error)
 }
 
 type executableSchema struct {
@@ -123,29 +138,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Entity.FindManufacturerByID(childComplexity, args["id"].(string)), true
 
-	case "Entity.findProductByManufacturerIDAndID":
-		if e.complexity.Entity.FindProductByManufacturerIDAndID == nil {
+	case "Entity.findProductByID":
+		if e.complexity.Entity.FindProductByID == nil {
 			break
 		}
 
-		args, err := ec.field_Entity_findProductByManufacturerIDAndID_args(context.TODO(), rawArgs)
+		args, err := ec.field_Entity_findProductByID_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Entity.FindProductByManufacturerIDAndID(childComplexity, args["manufacturerID"].(string), args["id"].(string)), true
-
-	case "Entity.findProductByUpc":
-		if e.complexity.Entity.FindProductByUpc == nil {
-			break
-		}
-
-		args, err := ec.field_Entity_findProductByUpc_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Entity.FindProductByUpc(childComplexity, args["upc"].(string)), true
+		return e.complexity.Entity.FindProductByID(childComplexity, args["id"].(string)), true
 
 	case "Manufacturer.id":
 		if e.complexity.Manufacturer.ID == nil {
@@ -172,6 +175,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.ManufacturerCreate(childComplexity, args["input"].(*model.NewManufaturer)), true
+
+	case "Mutation.productCreate":
+		if e.complexity.Mutation.ProductCreate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_productCreate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.ProductCreate(childComplexity, args["input"].(*model.NewProduct)), true
 
 	case "Product.id":
 		if e.complexity.Product.ID == nil {
@@ -227,6 +242,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Manufacturers(childComplexity), true
 
+	case "Query.product":
+		if e.complexity.Query.Product == nil {
+			break
+		}
+
+		args, err := ec.field_Query_product_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Product(childComplexity, args["id"].(string)), true
+
+	case "Query.products":
+		if e.complexity.Query.Products == nil {
+			break
+		}
+
+		return e.complexity.Query.Products(childComplexity), true
+
 	case "Query.topProducts":
 		if e.complexity.Query.TopProducts == nil {
 			break
@@ -274,6 +308,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputNewManufaturer,
+		ec.unmarshalInputNewProduct,
 	)
 	first := true
 
@@ -340,7 +375,7 @@ var sources = []*ast.Source{
 }
 
 extend type Mutation {
-  manufacturerCreate(input: NewManufaturer): Manufacturer
+  manufacturerCreate(input: NewManufaturer): Manufacturer!
 }
 
 extend type Product {
@@ -357,13 +392,25 @@ input NewManufaturer {
 }
 `, BuiltIn: false},
 	{Name: "graph/schema/product.graphqls", Input: `extend type Query {
-  topProducts(first: Int = 5): [Product]
+  topProducts(first: Int = 5): [Product!]
+  products: [Product!]
+  product(id: String!): Product!
 }
 
-type Product @key(fields: "manufacturer { id } id") @key(fields: "upc") {
+extend type Mutation {
+  productCreate(input: NewProduct): Product!
+}
+
+type Product @key(fields: "id") {
   id: String!
   upc: String!
   name: String!
+  price: Int!
+}
+
+input NewProduct {
+  name: String!
+  upc: String!
   price: Int!
 }
 `, BuiltIn: false},
@@ -385,8 +432,7 @@ union _Entity = Manufacturer | Product
 # fake type to build resolver interfaces for users to implement
 type Entity {
 		findManufacturerByID(id: String!,): Manufacturer!
-	findProductByManufacturerIDAndID(manufacturerID: String!,id: String!,): Product!
-	findProductByUpc(upc: String!,): Product!
+	findProductByID(id: String!,): Product!
 
 }
 
@@ -421,42 +467,18 @@ func (ec *executionContext) field_Entity_findManufacturerByID_args(ctx context.C
 	return args, nil
 }
 
-func (ec *executionContext) field_Entity_findProductByManufacturerIDAndID_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Entity_findProductByID_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["manufacturerID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("manufacturerID"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["manufacturerID"] = arg0
-	var arg1 string
 	if tmp, ok := rawArgs["id"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["id"] = arg1
-	return args, nil
-}
-
-func (ec *executionContext) field_Entity_findProductByUpc_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["upc"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upc"))
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["upc"] = arg0
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -467,6 +489,21 @@ func (ec *executionContext) field_Mutation_manufacturerCreate_args(ctx context.C
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalONewManufaturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewManufaturer(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_productCreate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.NewProduct
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalONewProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewProduct(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -506,6 +543,21 @@ func (ec *executionContext) field_Query__entities_args(ctx context.Context, rawA
 }
 
 func (ec *executionContext) field_Query_manufacturer_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_product_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
@@ -599,9 +651,9 @@ func (ec *executionContext) _Entity_findManufacturerByID(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Manufacturer)
+	res := resTmp.(*ent.Manufacturer)
 	fc.Result = res
-	return ec.marshalNManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐManufacturer(ctx, field.Selections, res)
+	return ec.marshalNManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐManufacturer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Entity_findManufacturerByID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -634,8 +686,8 @@ func (ec *executionContext) fieldContext_Entity_findManufacturerByID(ctx context
 	return fc, nil
 }
 
-func (ec *executionContext) _Entity_findProductByManufacturerIDAndID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Entity_findProductByManufacturerIDAndID(ctx, field)
+func (ec *executionContext) _Entity_findProductByID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Entity_findProductByID(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -648,7 +700,7 @@ func (ec *executionContext) _Entity_findProductByManufacturerIDAndID(ctx context
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Entity().FindProductByManufacturerIDAndID(rctx, fc.Args["manufacturerID"].(string), fc.Args["id"].(string))
+		return ec.resolvers.Entity().FindProductByID(rctx, fc.Args["id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -660,12 +712,12 @@ func (ec *executionContext) _Entity_findProductByManufacturerIDAndID(ctx context
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Product)
+	res := resTmp.(*ent.Product)
 	fc.Result = res
-	return ec.marshalNProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐProduct(ctx, field.Selections, res)
+	return ec.marshalNProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐProduct(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Entity_findProductByManufacturerIDAndID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Entity_findProductByID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Entity",
 		Field:      field,
@@ -694,81 +746,14 @@ func (ec *executionContext) fieldContext_Entity_findProductByManufacturerIDAndID
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Entity_findProductByManufacturerIDAndID_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Entity_findProductByID_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Entity_findProductByUpc(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Entity_findProductByUpc(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Entity().FindProductByUpc(rctx, fc.Args["upc"].(string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Product)
-	fc.Result = res
-	return ec.marshalNProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐProduct(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Entity_findProductByUpc(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Entity",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Product_id(ctx, field)
-			case "upc":
-				return ec.fieldContext_Product_upc(ctx, field)
-			case "name":
-				return ec.fieldContext_Product_name(ctx, field)
-			case "price":
-				return ec.fieldContext_Product_price(ctx, field)
-			case "manufacturer":
-				return ec.fieldContext_Product_manufacturer(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Product", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Entity_findProductByUpc_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Manufacturer_id(ctx context.Context, field graphql.CollectedField, obj *model.Manufacturer) (ret graphql.Marshaler) {
+func (ec *executionContext) _Manufacturer_id(ctx context.Context, field graphql.CollectedField, obj *ent.Manufacturer) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Manufacturer_id(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -782,7 +767,7 @@ func (ec *executionContext) _Manufacturer_id(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return ec.resolvers.Manufacturer().ID(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -803,8 +788,8 @@ func (ec *executionContext) fieldContext_Manufacturer_id(ctx context.Context, fi
 	fc = &graphql.FieldContext{
 		Object:     "Manufacturer",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -812,7 +797,7 @@ func (ec *executionContext) fieldContext_Manufacturer_id(ctx context.Context, fi
 	return fc, nil
 }
 
-func (ec *executionContext) _Manufacturer_name(ctx context.Context, field graphql.CollectedField, obj *model.Manufacturer) (ret graphql.Marshaler) {
+func (ec *executionContext) _Manufacturer_name(ctx context.Context, field graphql.CollectedField, obj *ent.Manufacturer) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Manufacturer_name(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -877,11 +862,14 @@ func (ec *executionContext) _Mutation_manufacturerCreate(ctx context.Context, fi
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Manufacturer)
+	res := resTmp.(*ent.Manufacturer)
 	fc.Result = res
-	return ec.marshalOManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐManufacturer(ctx, field.Selections, res)
+	return ec.marshalNManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐManufacturer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_manufacturerCreate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -914,7 +902,74 @@ func (ec *executionContext) fieldContext_Mutation_manufacturerCreate(ctx context
 	return fc, nil
 }
 
-func (ec *executionContext) _Product_id(ctx context.Context, field graphql.CollectedField, obj *model.Product) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_productCreate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_productCreate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ProductCreate(rctx, fc.Args["input"].(*model.NewProduct))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Product)
+	fc.Result = res
+	return ec.marshalNProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐProduct(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_productCreate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Product_id(ctx, field)
+			case "upc":
+				return ec.fieldContext_Product_upc(ctx, field)
+			case "name":
+				return ec.fieldContext_Product_name(ctx, field)
+			case "price":
+				return ec.fieldContext_Product_price(ctx, field)
+			case "manufacturer":
+				return ec.fieldContext_Product_manufacturer(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Product", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_productCreate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Product_id(ctx context.Context, field graphql.CollectedField, obj *ent.Product) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Product_id(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -928,7 +983,7 @@ func (ec *executionContext) _Product_id(ctx context.Context, field graphql.Colle
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return ec.resolvers.Product().ID(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -949,8 +1004,8 @@ func (ec *executionContext) fieldContext_Product_id(ctx context.Context, field g
 	fc = &graphql.FieldContext{
 		Object:     "Product",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -958,7 +1013,7 @@ func (ec *executionContext) fieldContext_Product_id(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _Product_upc(ctx context.Context, field graphql.CollectedField, obj *model.Product) (ret graphql.Marshaler) {
+func (ec *executionContext) _Product_upc(ctx context.Context, field graphql.CollectedField, obj *ent.Product) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Product_upc(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1002,7 +1057,7 @@ func (ec *executionContext) fieldContext_Product_upc(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Product_name(ctx context.Context, field graphql.CollectedField, obj *model.Product) (ret graphql.Marshaler) {
+func (ec *executionContext) _Product_name(ctx context.Context, field graphql.CollectedField, obj *ent.Product) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Product_name(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1046,7 +1101,7 @@ func (ec *executionContext) fieldContext_Product_name(ctx context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Product_price(ctx context.Context, field graphql.CollectedField, obj *model.Product) (ret graphql.Marshaler) {
+func (ec *executionContext) _Product_price(ctx context.Context, field graphql.CollectedField, obj *ent.Product) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Product_price(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1090,7 +1145,7 @@ func (ec *executionContext) fieldContext_Product_price(ctx context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _Product_manufacturer(ctx context.Context, field graphql.CollectedField, obj *model.Product) (ret graphql.Marshaler) {
+func (ec *executionContext) _Product_manufacturer(ctx context.Context, field graphql.CollectedField, obj *ent.Product) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Product_manufacturer(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1104,7 +1159,7 @@ func (ec *executionContext) _Product_manufacturer(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Manufacturer, nil
+		return ec.resolvers.Product().Manufacturer(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1116,17 +1171,17 @@ func (ec *executionContext) _Product_manufacturer(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Manufacturer)
+	res := resTmp.(*ent.Manufacturer)
 	fc.Result = res
-	return ec.marshalNManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐManufacturer(ctx, field.Selections, res)
+	return ec.marshalNManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐManufacturer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Product_manufacturer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Product",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -1163,9 +1218,9 @@ func (ec *executionContext) _Query_manufacturers(ctx context.Context, field grap
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Manufacturer)
+	res := resTmp.([]*ent.Manufacturer)
 	fc.Result = res
-	return ec.marshalOManufacturer2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐManufacturer(ctx, field.Selections, res)
+	return ec.marshalOManufacturer2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐManufacturer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_manufacturers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1210,9 +1265,9 @@ func (ec *executionContext) _Query_manufacturer(ctx context.Context, field graph
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.Manufacturer)
+	res := resTmp.(*ent.Manufacturer)
 	fc.Result = res
-	return ec.marshalOManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐManufacturer(ctx, field.Selections, res)
+	return ec.marshalOManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐManufacturer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_manufacturer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1268,9 +1323,9 @@ func (ec *executionContext) _Query_topProducts(ctx context.Context, field graphq
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Product)
+	res := resTmp.([]*ent.Product)
 	fc.Result = res
-	return ec.marshalOProduct2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐProduct(ctx, field.Selections, res)
+	return ec.marshalOProduct2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐProductᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_topProducts(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1303,6 +1358,126 @@ func (ec *executionContext) fieldContext_Query_topProducts(ctx context.Context, 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_topProducts_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_products(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_products(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Products(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.Product)
+	fc.Result = res
+	return ec.marshalOProduct2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐProductᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_products(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Product_id(ctx, field)
+			case "upc":
+				return ec.fieldContext_Product_upc(ctx, field)
+			case "name":
+				return ec.fieldContext_Product_name(ctx, field)
+			case "price":
+				return ec.fieldContext_Product_price(ctx, field)
+			case "manufacturer":
+				return ec.fieldContext_Product_manufacturer(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Product", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_product(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_product(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Product(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Product)
+	fc.Result = res
+	return ec.marshalNProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐProduct(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_product(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Product_id(ctx, field)
+			case "upc":
+				return ec.fieldContext_Product_upc(ctx, field)
+			case "name":
+				return ec.fieldContext_Product_name(ctx, field)
+			case "price":
+				return ec.fieldContext_Product_price(ctx, field)
+			case "manufacturer":
+				return ec.fieldContext_Product_manufacturer(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Product", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_product_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -3378,6 +3553,45 @@ func (ec *executionContext) unmarshalInputNewManufaturer(ctx context.Context, ob
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNewProduct(ctx context.Context, obj interface{}) (model.NewProduct, error) {
+	var it model.NewProduct
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "upc":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("upc"))
+			it.Upc, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "price":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("price"))
+			it.Price, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -3386,16 +3600,16 @@ func (ec *executionContext) __Entity(ctx context.Context, sel ast.SelectionSet, 
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.Manufacturer:
+	case ent.Manufacturer:
 		return ec._Manufacturer(ctx, sel, &obj)
-	case *model.Manufacturer:
+	case *ent.Manufacturer:
 		if obj == nil {
 			return graphql.Null
 		}
 		return ec._Manufacturer(ctx, sel, obj)
-	case model.Product:
+	case ent.Product:
 		return ec._Product(ctx, sel, &obj)
-	case *model.Product:
+	case *ent.Product:
 		if obj == nil {
 			return graphql.Null
 		}
@@ -3451,7 +3665,7 @@ func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet) g
 			out.Concurrently(i, func() graphql.Marshaler {
 				return rrm(innerCtx)
 			})
-		case "findProductByManufacturerIDAndID":
+		case "findProductByID":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -3460,30 +3674,7 @@ func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet) g
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Entity_findProductByManufacturerIDAndID(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
-			}
-
-			out.Concurrently(i, func() graphql.Marshaler {
-				return rrm(innerCtx)
-			})
-		case "findProductByUpc":
-			field := field
-
-			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Entity_findProductByUpc(ctx, field)
+				res = ec._Entity_findProductByID(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -3510,7 +3701,7 @@ func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet) g
 
 var manufacturerImplementors = []string{"Manufacturer", "_Entity"}
 
-func (ec *executionContext) _Manufacturer(ctx context.Context, sel ast.SelectionSet, obj *model.Manufacturer) graphql.Marshaler {
+func (ec *executionContext) _Manufacturer(ctx context.Context, sel ast.SelectionSet, obj *ent.Manufacturer) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, manufacturerImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -3519,18 +3710,31 @@ func (ec *executionContext) _Manufacturer(ctx context.Context, sel ast.Selection
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Manufacturer")
 		case "id":
+			field := field
 
-			out.Values[i] = ec._Manufacturer_id(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Manufacturer_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "name":
 
 			out.Values[i] = ec._Manufacturer_name(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -3568,6 +3772,18 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 				return ec._Mutation_manufacturerCreate(ctx, field)
 			})
 
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "productCreate":
+
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_productCreate(ctx, field)
+			})
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3581,7 +3797,7 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 var productImplementors = []string{"Product", "_Entity"}
 
-func (ec *executionContext) _Product(ctx context.Context, sel ast.SelectionSet, obj *model.Product) graphql.Marshaler {
+func (ec *executionContext) _Product(ctx context.Context, sel ast.SelectionSet, obj *ent.Product) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, productImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -3590,40 +3806,66 @@ func (ec *executionContext) _Product(ctx context.Context, sel ast.SelectionSet, 
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Product")
 		case "id":
+			field := field
 
-			out.Values[i] = ec._Product_id(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Product_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "upc":
 
 			out.Values[i] = ec._Product_upc(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "name":
 
 			out.Values[i] = ec._Product_name(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "price":
 
 			out.Values[i] = ec._Product_price(ctx, field, obj)
 
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "manufacturer":
+			field := field
 
-			out.Values[i] = ec._Product_manufacturer(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Product_manufacturer(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3704,6 +3946,49 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_topProducts(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "products":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_products(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx, innerFunc)
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return rrm(innerCtx)
+			})
+		case "product":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_product(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -4156,11 +4441,11 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) marshalNManufacturer2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐManufacturer(ctx context.Context, sel ast.SelectionSet, v model.Manufacturer) graphql.Marshaler {
+func (ec *executionContext) marshalNManufacturer2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐManufacturer(ctx context.Context, sel ast.SelectionSet, v ent.Manufacturer) graphql.Marshaler {
 	return ec._Manufacturer(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐManufacturer(ctx context.Context, sel ast.SelectionSet, v *model.Manufacturer) graphql.Marshaler {
+func (ec *executionContext) marshalNManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐManufacturer(ctx context.Context, sel ast.SelectionSet, v *ent.Manufacturer) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -4170,11 +4455,11 @@ func (ec *executionContext) marshalNManufacturer2ᚖgithubᚗcomᚋjohannmunoz�
 	return ec._Manufacturer(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNProduct2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐProduct(ctx context.Context, sel ast.SelectionSet, v model.Product) graphql.Marshaler {
+func (ec *executionContext) marshalNProduct2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐProduct(ctx context.Context, sel ast.SelectionSet, v ent.Product) graphql.Marshaler {
 	return ec._Product(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐProduct(ctx context.Context, sel ast.SelectionSet, v *model.Product) graphql.Marshaler {
+func (ec *executionContext) marshalNProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐProduct(ctx context.Context, sel ast.SelectionSet, v *ent.Product) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -4604,7 +4889,7 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 	return res
 }
 
-func (ec *executionContext) marshalOManufacturer2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐManufacturer(ctx context.Context, sel ast.SelectionSet, v []*model.Manufacturer) graphql.Marshaler {
+func (ec *executionContext) marshalOManufacturer2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐManufacturer(ctx context.Context, sel ast.SelectionSet, v []*ent.Manufacturer) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -4631,7 +4916,7 @@ func (ec *executionContext) marshalOManufacturer2ᚕᚖgithubᚗcomᚋjohannmuno
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐManufacturer(ctx, sel, v[i])
+			ret[i] = ec.marshalOManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐManufacturer(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -4645,7 +4930,7 @@ func (ec *executionContext) marshalOManufacturer2ᚕᚖgithubᚗcomᚋjohannmuno
 	return ret
 }
 
-func (ec *executionContext) marshalOManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐManufacturer(ctx context.Context, sel ast.SelectionSet, v *model.Manufacturer) graphql.Marshaler {
+func (ec *executionContext) marshalOManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐManufacturer(ctx context.Context, sel ast.SelectionSet, v *ent.Manufacturer) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -4660,7 +4945,15 @@ func (ec *executionContext) unmarshalONewManufaturer2ᚖgithubᚗcomᚋjohannmun
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalOProduct2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐProduct(ctx context.Context, sel ast.SelectionSet, v []*model.Product) graphql.Marshaler {
+func (ec *executionContext) unmarshalONewProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewProduct(ctx context.Context, v interface{}) (*model.NewProduct, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputNewProduct(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOProduct2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐProductᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Product) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -4687,7 +4980,7 @@ func (ec *executionContext) marshalOProduct2ᚕᚖgithubᚗcomᚋjohannmunozᚋg
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐProduct(ctx, sel, v[i])
+			ret[i] = ec.marshalNProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐProduct(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -4698,14 +4991,13 @@ func (ec *executionContext) marshalOProduct2ᚕᚖgithubᚗcomᚋjohannmunozᚋg
 	}
 	wg.Wait()
 
-	return ret
-}
-
-func (ec *executionContext) marshalOProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐProduct(ctx context.Context, sel ast.SelectionSet, v *model.Product) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
 	}
-	return ec._Product(ctx, sel, v)
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

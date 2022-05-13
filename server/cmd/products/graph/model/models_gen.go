@@ -2,23 +2,12 @@
 
 package model
 
-type Manufacturer struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
-func (Manufacturer) IsEntity() {}
-
 type NewManufaturer struct {
 	Name string `json:"name"`
 }
 
-type Product struct {
-	ID           string        `json:"id"`
-	Upc          string        `json:"upc"`
-	Name         string        `json:"name"`
-	Price        int           `json:"price"`
-	Manufacturer *Manufacturer `json:"manufacturer"`
+type NewProduct struct {
+	Name  string `json:"name"`
+	Upc   string `json:"upc"`
+	Price int    `json:"price"`
 }
-
-func (Product) IsEntity() {}

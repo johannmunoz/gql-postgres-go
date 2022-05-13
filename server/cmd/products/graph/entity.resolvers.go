@@ -5,34 +5,18 @@ package graph
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/johannmunoz/gql_postgres_go/cmd/products/ent"
 	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph/generated"
-	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph/model"
 )
 
-func (r *entityResolver) FindManufacturerByID(ctx context.Context, id string) (*model.Manufacturer, error) {
-	return &model.Manufacturer{
-		ID:   id,
-		Name: "Millinery " + id,
-	}, nil
+func (r *entityResolver) FindManufacturerByID(ctx context.Context, id string) (*ent.Manufacturer, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *entityResolver) FindProductByManufacturerIDAndID(ctx context.Context, manufacturerID string, id string) (*model.Product, error) {
-	for _, hat := range hats {
-		if hat.ID == id && hat.Manufacturer.ID == manufacturerID {
-			return hat, nil
-		}
-	}
-	return nil, nil
-}
-
-func (r *entityResolver) FindProductByUpc(ctx context.Context, upc string) (*model.Product, error) {
-	for _, hat := range hats {
-		if hat.Upc == upc {
-			return hat, nil
-		}
-	}
-	return nil, nil
+func (r *entityResolver) FindProductByID(ctx context.Context, id string) (*ent.Product, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 // Entity returns generated.EntityResolver implementation.

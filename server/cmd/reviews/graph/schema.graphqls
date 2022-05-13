@@ -1,22 +1,22 @@
 type Review {
-    body: String!
-    author: User! @provides(fields: "username")
-    product: Product!
+  body: String!
+  author: User! @provides(fields: "username")
+  product: Product!
 }
 
 extend type User @key(fields: "id") {
-    id: ID! @external
-    email: String! @external
-    username: String! @external
-    reviews: [Review]
+  id: ID! @external
+  email: String! @external
+  username: String! @external
+  reviews: [Review]
 }
 
 extend type Manufacturer @key(fields: "id") {
-    id: String! @external
+  id: String! @external
 }
 
-extend type Product @key(fields: " manufacturer{  id} id") {
-    id: String! @external
-    manufacturer: Manufacturer! @external
-    reviews: [Review]
+extend type Product @key(fields: "id") {
+  id: String! @external
+  manufacturer: Manufacturer! @external
+  reviews: [Review]
 }

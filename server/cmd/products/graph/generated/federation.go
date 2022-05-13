@@ -107,28 +107,12 @@ func (ec *executionContext) __resolve_entities(ctx context.Context, representati
 			}
 			switch resolverName {
 
-			case "findProductByManufacturerIDAndID":
-				id0, err := ec.unmarshalNString2string(ctx, rep["manufacturer"].(map[string]interface{})["id"])
+			case "findProductByID":
+				id0, err := ec.unmarshalNString2string(ctx, rep["id"])
 				if err != nil {
-					return fmt.Errorf(`unmarshalling param 0 for findProductByManufacturerIDAndID(): %w`, err)
+					return fmt.Errorf(`unmarshalling param 0 for findProductByID(): %w`, err)
 				}
-				id1, err := ec.unmarshalNString2string(ctx, rep["id"])
-				if err != nil {
-					return fmt.Errorf(`unmarshalling param 1 for findProductByManufacturerIDAndID(): %w`, err)
-				}
-				entity, err := ec.resolvers.Entity().FindProductByManufacturerIDAndID(ctx, id0, id1)
-				if err != nil {
-					return fmt.Errorf(`resolving Entity "Product": %w`, err)
-				}
-
-				list[idx[i]] = entity
-				return nil
-			case "findProductByUpc":
-				id0, err := ec.unmarshalNString2string(ctx, rep["upc"])
-				if err != nil {
-					return fmt.Errorf(`unmarshalling param 0 for findProductByUpc(): %w`, err)
-				}
-				entity, err := ec.resolvers.Entity().FindProductByUpc(ctx, id0)
+				entity, err := ec.resolvers.Entity().FindProductByID(ctx, id0)
 				if err != nil {
 					return fmt.Errorf(`resolving Entity "Product": %w`, err)
 				}
@@ -231,33 +215,10 @@ func entityResolverNameForProduct(ctx context.Context, rep map[string]interface{
 		)
 		_ = val
 		m = rep
-		if val, ok = m["manufacturer"]; !ok {
-			break
-		}
-		if m, ok = val.(map[string]interface{}); !ok {
-			break
-		}
 		if _, ok = m["id"]; !ok {
 			break
 		}
-		m = rep
-		if _, ok = m["id"]; !ok {
-			break
-		}
-		return "findProductByManufacturerIDAndID", nil
-	}
-	for {
-		var (
-			m   map[string]interface{}
-			val interface{}
-			ok  bool
-		)
-		_ = val
-		m = rep
-		if _, ok = m["upc"]; !ok {
-			break
-		}
-		return "findProductByUpc", nil
+		return "findProductByID", nil
 	}
 	return "", fmt.Errorf("%w for Product", ErrTypeNotFound)
 }

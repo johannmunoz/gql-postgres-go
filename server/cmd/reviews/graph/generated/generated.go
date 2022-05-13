@@ -45,8 +45,8 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Entity struct {
-		FindProductByManufacturerIDAndID func(childComplexity int, manufacturerID string, id string) int
-		FindUserByID                     func(childComplexity int, id string) int
+		FindProductByID func(childComplexity int, id string) int
+		FindUserByID    func(childComplexity int, id string) int
 	}
 
 	Manufacturer struct {
@@ -83,7 +83,7 @@ type ComplexityRoot struct {
 }
 
 type EntityResolver interface {
-	FindProductByManufacturerIDAndID(ctx context.Context, manufacturerID string, id string) (*model.Product, error)
+	FindProductByID(ctx context.Context, id string) (*model.Product, error)
 	FindUserByID(ctx context.Context, id string) (*model.User, error)
 }
 
@@ -102,17 +102,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "Entity.findProductByManufacturerIDAndID":
-		if e.complexity.Entity.FindProductByManufacturerIDAndID == nil {
+	case "Entity.findProductByID":
+		if e.complexity.Entity.FindProductByID == nil {
 			break
 		}
 
-		args, err := ec.field_Entity_findProductByManufacturerIDAndID_args(context.TODO(), rawArgs)
+		args, err := ec.field_Entity_findProductByID_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Entity.FindProductByManufacturerIDAndID(childComplexity, args["manufacturerID"].(string), args["id"].(string)), true
+		return e.complexity.Entity.FindProductByID(childComplexity, args["id"].(string)), true
 
 	case "Entity.findUserByID":
 		if e.complexity.Entity.FindUserByID == nil {
@@ -282,26 +282,26 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 
 var sources = []*ast.Source{
 	{Name: "graph/schema.graphqls", Input: `type Review {
-    body: String!
-    author: User! @provides(fields: "username")
-    product: Product!
+  body: String!
+  author: User! @provides(fields: "username")
+  product: Product!
 }
 
 extend type User @key(fields: "id") {
-    id: ID! @external
-    email: String! @external
-    username: String! @external
-    reviews: [Review]
+  id: ID! @external
+  email: String! @external
+  username: String! @external
+  reviews: [Review]
 }
 
 extend type Manufacturer @key(fields: "id") {
-    id: String! @external
+  id: String! @external
 }
 
-extend type Product @key(fields: " manufacturer{  id} id") {
-    id: String! @external
-    manufacturer: Manufacturer! @external
-    reviews: [Review]
+extend type Product @key(fields: "id") {
+  id: String! @external
+  manufacturer: Manufacturer! @external
+  reviews: [Review]
 }
 `, BuiltIn: false},
 	{Name: "federation/directives.graphql", Input: `
@@ -321,7 +321,7 @@ union _Entity = Manufacturer | Product | User
 
 # fake type to build resolver interfaces for users to implement
 type Entity {
-		findProductByManufacturerIDAndID(manufacturerID: String!,id: String!,): Product!
+		findProductByID(id: String!,): Product!
 	findUserByID(id: ID!,): User!
 
 }
@@ -342,27 +342,18 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Entity_findProductByManufacturerIDAndID_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Entity_findProductByID_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["manufacturerID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("manufacturerID"))
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["manufacturerID"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["id"] = arg1
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -449,8 +440,8 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Entity_findProductByManufacturerIDAndID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Entity_findProductByManufacturerIDAndID(ctx, field)
+func (ec *executionContext) _Entity_findProductByID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Entity_findProductByID(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -463,7 +454,7 @@ func (ec *executionContext) _Entity_findProductByManufacturerIDAndID(ctx context
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Entity().FindProductByManufacturerIDAndID(rctx, fc.Args["manufacturerID"].(string), fc.Args["id"].(string))
+		return ec.resolvers.Entity().FindProductByID(rctx, fc.Args["id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -480,7 +471,7 @@ func (ec *executionContext) _Entity_findProductByManufacturerIDAndID(ctx context
 	return ec.marshalNProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋgraphᚋmodelᚐProduct(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Entity_findProductByManufacturerIDAndID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Entity_findProductByID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Entity",
 		Field:      field,
@@ -505,7 +496,7 @@ func (ec *executionContext) fieldContext_Entity_findProductByManufacturerIDAndID
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Entity_findProductByManufacturerIDAndID_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Entity_findProductByID_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return
 	}
@@ -3196,7 +3187,7 @@ func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet) g
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Entity")
-		case "findProductByManufacturerIDAndID":
+		case "findProductByID":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -3205,7 +3196,7 @@ func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet) g
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Entity_findProductByManufacturerIDAndID(ctx, field)
+				res = ec._Entity_findProductByID(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

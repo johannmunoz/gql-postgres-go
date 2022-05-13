@@ -1,10 +1,22 @@
 extend type Query {
-  topProducts(first: Int = 5): [Product]
+  topProducts(first: Int = 5): [Product!]
+  products: [Product!]
+  product(id: String!): Product!
 }
 
-type Product @key(fields: "manufacturer { id } id") @key(fields: "upc") {
+extend type Mutation {
+  productCreate(input: NewProduct): Product!
+}
+
+type Product @key(fields: "id") {
   id: String!
   upc: String!
   name: String!
+  price: Int!
+}
+
+input NewProduct {
+  name: String!
+  upc: String!
   price: Int!
 }

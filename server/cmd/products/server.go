@@ -1,8 +1,9 @@
 package main
 
-//go:generate go run github.com/99designs/gqlgen generate
-
 import (
+	"context"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,19 +11,46 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/debug"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/johannmunoz/gql_postgres_go/cmd/products/ent"
 	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph"
-	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph/generated"
+	_ "github.com/lib/pq"
 )
 
 const defaultPort = "4002"
 
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	password = "secret"
+	dbname   = "testing_db"
+)
+
 func main() {
+	var entOptions []ent.Option
+	entOptions = append(entOptions, ent.Debug())
+
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+
+	client, err := ent.Open("postgres", psqlInfo, entOptions...)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer client.Close()
+
+	if err := client.Schema.Create(context.Background()); !errors.Is(err, nil) {
+		log.Fatalf("Error: failed creating schema resources %v\n", err)
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
 	}
 
-	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
+	srv := handler.NewDefaultServer(graph.NewSchema(client))
 	srv.Use(&debug.Tracer{})
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
