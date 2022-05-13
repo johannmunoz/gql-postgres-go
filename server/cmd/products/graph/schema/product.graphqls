@@ -5,7 +5,11 @@ extend type Query {
 }
 
 extend type Mutation {
-  productCreate(input: NewProduct): Product!
+  productCreate(input: NewProduct!, manufacturerId: String!): Product!
+}
+
+extend type Manufacturer {
+  products: [Product!]
 }
 
 type Product @key(fields: "id") {

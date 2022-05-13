@@ -55,13 +55,14 @@ type ComplexityRoot struct {
 	}
 
 	Manufacturer struct {
-		ID   func(childComplexity int) int
-		Name func(childComplexity int) int
+		ID       func(childComplexity int) int
+		Name     func(childComplexity int) int
+		Products func(childComplexity int) int
 	}
 
 	Mutation struct {
-		ManufacturerCreate func(childComplexity int, input *model.NewManufaturer) int
-		ProductCreate      func(childComplexity int, input *model.NewProduct) int
+		ManufacturerCreate func(childComplexity int, input model.NewManufaturer) int
+		ProductCreate      func(childComplexity int, input model.NewProduct, manufacturerID string) int
 	}
 
 	Product struct {
@@ -93,10 +94,12 @@ type EntityResolver interface {
 }
 type ManufacturerResolver interface {
 	ID(ctx context.Context, obj *ent.Manufacturer) (string, error)
+
+	Products(ctx context.Context, obj *ent.Manufacturer) ([]*ent.Product, error)
 }
 type MutationResolver interface {
-	ManufacturerCreate(ctx context.Context, input *model.NewManufaturer) (*ent.Manufacturer, error)
-	ProductCreate(ctx context.Context, input *model.NewProduct) (*ent.Product, error)
+	ManufacturerCreate(ctx context.Context, input model.NewManufaturer) (*ent.Manufacturer, error)
+	ProductCreate(ctx context.Context, input model.NewProduct, manufacturerID string) (*ent.Product, error)
 }
 type ProductResolver interface {
 	ID(ctx context.Context, obj *ent.Product) (string, error)
@@ -164,6 +167,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Manufacturer.Name(childComplexity), true
 
+	case "Manufacturer.products":
+		if e.complexity.Manufacturer.Products == nil {
+			break
+		}
+
+		return e.complexity.Manufacturer.Products(childComplexity), true
+
 	case "Mutation.manufacturerCreate":
 		if e.complexity.Mutation.ManufacturerCreate == nil {
 			break
@@ -174,7 +184,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ManufacturerCreate(childComplexity, args["input"].(*model.NewManufaturer)), true
+		return e.complexity.Mutation.ManufacturerCreate(childComplexity, args["input"].(model.NewManufaturer)), true
 
 	case "Mutation.productCreate":
 		if e.complexity.Mutation.ProductCreate == nil {
@@ -186,7 +196,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ProductCreate(childComplexity, args["input"].(*model.NewProduct)), true
+		return e.complexity.Mutation.ProductCreate(childComplexity, args["input"].(model.NewProduct), args["manufacturerId"].(string)), true
 
 	case "Product.id":
 		if e.complexity.Product.ID == nil {
@@ -375,7 +385,7 @@ var sources = []*ast.Source{
 }
 
 extend type Mutation {
-  manufacturerCreate(input: NewManufaturer): Manufacturer!
+  manufacturerCreate(input: NewManufaturer!): Manufacturer!
 }
 
 extend type Product {
@@ -398,7 +408,11 @@ input NewManufaturer {
 }
 
 extend type Mutation {
-  productCreate(input: NewProduct): Product!
+  productCreate(input: NewProduct!, manufacturerId: String!): Product!
+}
+
+extend type Manufacturer {
+  products: [Product!]
 }
 
 type Product @key(fields: "id") {
@@ -485,10 +499,10 @@ func (ec *executionContext) field_Entity_findProductByID_args(ctx context.Contex
 func (ec *executionContext) field_Mutation_manufacturerCreate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.NewManufaturer
+	var arg0 model.NewManufaturer
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalONewManufaturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewManufaturer(ctx, tmp)
+		arg0, err = ec.unmarshalNNewManufaturer2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewManufaturer(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -500,15 +514,24 @@ func (ec *executionContext) field_Mutation_manufacturerCreate_args(ctx context.C
 func (ec *executionContext) field_Mutation_productCreate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.NewProduct
+	var arg0 model.NewProduct
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalONewProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewProduct(ctx, tmp)
+		arg0, err = ec.unmarshalNNewProduct2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewProduct(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["input"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["manufacturerId"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("manufacturerId"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["manufacturerId"] = arg1
 	return args, nil
 }
 
@@ -668,6 +691,8 @@ func (ec *executionContext) fieldContext_Entity_findManufacturerByID(ctx context
 				return ec.fieldContext_Manufacturer_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Manufacturer_name(ctx, field)
+			case "products":
+				return ec.fieldContext_Manufacturer_products(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Manufacturer", field.Name)
 		},
@@ -841,6 +866,59 @@ func (ec *executionContext) fieldContext_Manufacturer_name(ctx context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Manufacturer_products(ctx context.Context, field graphql.CollectedField, obj *ent.Manufacturer) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Manufacturer_products(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Manufacturer().Products(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.Product)
+	fc.Result = res
+	return ec.marshalOProduct2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐProductᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Manufacturer_products(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Manufacturer",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Product_id(ctx, field)
+			case "upc":
+				return ec.fieldContext_Product_upc(ctx, field)
+			case "name":
+				return ec.fieldContext_Product_name(ctx, field)
+			case "price":
+				return ec.fieldContext_Product_price(ctx, field)
+			case "manufacturer":
+				return ec.fieldContext_Product_manufacturer(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Product", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_manufacturerCreate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_manufacturerCreate(ctx, field)
 	if err != nil {
@@ -855,7 +933,7 @@ func (ec *executionContext) _Mutation_manufacturerCreate(ctx context.Context, fi
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ManufacturerCreate(rctx, fc.Args["input"].(*model.NewManufaturer))
+		return ec.resolvers.Mutation().ManufacturerCreate(rctx, fc.Args["input"].(model.NewManufaturer))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -884,6 +962,8 @@ func (ec *executionContext) fieldContext_Mutation_manufacturerCreate(ctx context
 				return ec.fieldContext_Manufacturer_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Manufacturer_name(ctx, field)
+			case "products":
+				return ec.fieldContext_Manufacturer_products(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Manufacturer", field.Name)
 		},
@@ -916,7 +996,7 @@ func (ec *executionContext) _Mutation_productCreate(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ProductCreate(rctx, fc.Args["input"].(*model.NewProduct))
+		return ec.resolvers.Mutation().ProductCreate(rctx, fc.Args["input"].(model.NewProduct), fc.Args["manufacturerId"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1188,6 +1268,8 @@ func (ec *executionContext) fieldContext_Product_manufacturer(ctx context.Contex
 				return ec.fieldContext_Manufacturer_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Manufacturer_name(ctx, field)
+			case "products":
+				return ec.fieldContext_Manufacturer_products(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Manufacturer", field.Name)
 		},
@@ -1235,6 +1317,8 @@ func (ec *executionContext) fieldContext_Query_manufacturers(ctx context.Context
 				return ec.fieldContext_Manufacturer_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Manufacturer_name(ctx, field)
+			case "products":
+				return ec.fieldContext_Manufacturer_products(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Manufacturer", field.Name)
 		},
@@ -1282,6 +1366,8 @@ func (ec *executionContext) fieldContext_Query_manufacturer(ctx context.Context,
 				return ec.fieldContext_Manufacturer_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Manufacturer_name(ctx, field)
+			case "products":
+				return ec.fieldContext_Manufacturer_products(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Manufacturer", field.Name)
 		},
@@ -3736,6 +3822,23 @@ func (ec *executionContext) _Manufacturer(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "products":
+			field := field
+
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Manufacturer_products(ctx, field, obj)
+				return res
+			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4455,6 +4558,16 @@ func (ec *executionContext) marshalNManufacturer2ᚖgithubᚗcomᚋjohannmunoz�
 	return ec._Manufacturer(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNNewManufaturer2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewManufaturer(ctx context.Context, v interface{}) (model.NewManufaturer, error) {
+	res, err := ec.unmarshalInputNewManufaturer(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNNewProduct2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewProduct(ctx context.Context, v interface{}) (model.NewProduct, error) {
+	res, err := ec.unmarshalInputNewProduct(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNProduct2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐProduct(ctx context.Context, sel ast.SelectionSet, v ent.Product) graphql.Marshaler {
 	return ec._Product(ctx, sel, &v)
 }
@@ -4935,22 +5048,6 @@ func (ec *executionContext) marshalOManufacturer2ᚖgithubᚗcomᚋjohannmunoz�
 		return graphql.Null
 	}
 	return ec._Manufacturer(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalONewManufaturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewManufaturer(ctx context.Context, v interface{}) (*model.NewManufaturer, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputNewManufaturer(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalONewProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewProduct(ctx context.Context, v interface{}) (*model.NewProduct, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputNewProduct(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalOProduct2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋentᚐProductᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Product) graphql.Marshaler {

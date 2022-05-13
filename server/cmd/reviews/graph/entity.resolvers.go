@@ -12,11 +12,11 @@ import (
 )
 
 func (r *entityResolver) FindProductByID(ctx context.Context, id string) (*model.Product, error) {
-	panic(fmt.Errorf("not implemented"))
+	panic(fmt.Errorf("FindProductByID not implemented"))
 }
 
 func (r *entityResolver) FindUserByID(ctx context.Context, id string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	panic(fmt.Errorf("FindUserByID not implemented"))
 }
 
 // Entity returns generated.EntityResolver implementation.

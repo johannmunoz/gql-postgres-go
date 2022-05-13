@@ -12,7 +12,7 @@ import (
 )
 
 func (r *entityResolver) FindUserByID(ctx context.Context, id string) (*ent.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	panic(fmt.Errorf("FindUserByID not implemented"))
 }
 
 // Entity returns generated.EntityResolver implementation.
