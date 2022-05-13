@@ -1,3 +1,16 @@
+extend type Query {
+  reviews: [Review!]
+  review(id: String!): Review!
+}
+
+extend type Mutation {
+  reviewCreate(
+    input: NewReview!
+    authorId: String!
+    productId: String!
+  ): Review!
+}
+
 type Review @key(fields: "id") {
   id: String!
   body: String!
@@ -20,4 +33,8 @@ extend type Product @key(fields: "id") {
   id: String! @external
   manufacturer: Manufacturer! @external
   reviews: [Review!]
+}
+
+input NewReview {
+  body: String!
 }

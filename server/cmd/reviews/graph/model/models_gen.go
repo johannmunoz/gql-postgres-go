@@ -12,6 +12,10 @@ type Manufacturer struct {
 
 func (Manufacturer) IsEntity() {}
 
+type NewReview struct {
+	Body string `json:"body"`
+}
+
 type User struct {
 	ID       string        `json:"id"`
 	Email    string        `json:"email"`
