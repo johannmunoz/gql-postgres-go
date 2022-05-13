@@ -140,3 +140,5 @@ func (r Reviews) config(cfg config) {
 		r[_i].config = cfg
 	}
 }
+
+func (Review) IsEntity() {}

@@ -111,3 +111,5 @@ func (pr Products) config(cfg config) {
 		pr[_i].config = cfg
 	}
 }
+
+func (Product) IsEntity() {}
