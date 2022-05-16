@@ -2,25 +2,6 @@
 
 package model
 
-import (
-	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent"
-)
-
-type Manufacturer struct {
-	ID string `json:"id"`
-}
-
-func (Manufacturer) IsEntity() {}
-
 type NewReview struct {
 	Body string `json:"body"`
 }
-
-type User struct {
-	ID       string        `json:"id"`
-	Email    string        `json:"email"`
-	Username string        `json:"username"`
-	Reviews  []*ent.Review `json:"reviews"`
-}
-
-func (User) IsEntity() {}

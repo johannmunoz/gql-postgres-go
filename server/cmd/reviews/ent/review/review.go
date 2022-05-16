@@ -15,6 +15,8 @@ const (
 	FieldBody = "body"
 	// EdgeProduct holds the string denoting the product edge name in mutations.
 	EdgeProduct = "product"
+	// EdgeAuthor holds the string denoting the author edge name in mutations.
+	EdgeAuthor = "author"
 	// Table holds the table name of the review in the database.
 	Table = "reviews"
 	// ProductTable is the table that holds the product relation/edge.
@@ -24,6 +26,13 @@ const (
 	ProductInverseTable = "products"
 	// ProductColumn is the table column denoting the product relation/edge.
 	ProductColumn = "product_reviews"
+	// AuthorTable is the table that holds the author relation/edge.
+	AuthorTable = "reviews"
+	// AuthorInverseTable is the table name for the User entity.
+	// It exists in this package in order to avoid circular dependency with the "user" package.
+	AuthorInverseTable = "users"
+	// AuthorColumn is the table column denoting the author relation/edge.
+	AuthorColumn = "user_reviews"
 )
 
 // Columns holds all SQL columns for review fields.
@@ -36,6 +45,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"product_reviews",
+	"user_reviews",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

@@ -39,10 +39,12 @@ type Config struct {
 
 type ResolverRoot interface {
 	Entity() EntityResolver
+	Manufacturer() ManufacturerResolver
 	Mutation() MutationResolver
 	Product() ProductResolver
 	Query() QueryResolver
 	Review() ReviewResolver
+	User() UserResolver
 }
 
 type DirectiveRoot struct {
@@ -98,14 +100,17 @@ type ComplexityRoot struct {
 type EntityResolver interface {
 	FindProductByID(ctx context.Context, id string) (*ent.Product, error)
 	FindReviewByID(ctx context.Context, id string) (*ent.Review, error)
-	FindUserByID(ctx context.Context, id string) (*model.User, error)
+	FindUserByID(ctx context.Context, id string) (*ent.User, error)
+}
+type ManufacturerResolver interface {
+	ID(ctx context.Context, obj *ent.Manufacturer) (string, error)
 }
 type MutationResolver interface {
 	ReviewCreate(ctx context.Context, input model.NewReview, authorID string, productID string) (*ent.Review, error)
 }
 type ProductResolver interface {
 	ID(ctx context.Context, obj *ent.Product) (string, error)
-	Manufacturer(ctx context.Context, obj *ent.Product) (*model.Manufacturer, error)
+	Manufacturer(ctx context.Context, obj *ent.Product) (*ent.Manufacturer, error)
 	Reviews(ctx context.Context, obj *ent.Product) ([]*ent.Review, error)
 }
 type QueryResolver interface {
@@ -115,8 +120,14 @@ type QueryResolver interface {
 type ReviewResolver interface {
 	ID(ctx context.Context, obj *ent.Review) (string, error)
 
-	Author(ctx context.Context, obj *ent.Review) (*model.User, error)
+	Author(ctx context.Context, obj *ent.Review) (*ent.User, error)
 	Product(ctx context.Context, obj *ent.Review) (*ent.Product, error)
+}
+type UserResolver interface {
+	ID(ctx context.Context, obj *ent.User) (string, error)
+	Email(ctx context.Context, obj *ent.User) (string, error)
+	Username(ctx context.Context, obj *ent.User) (string, error)
+	Reviews(ctx context.Context, obj *ent.User) ([]*ent.Review, error)
 }
 
 type executableSchema struct {
@@ -775,9 +786,9 @@ func (ec *executionContext) _Entity_findUserByID(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*ent.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋentᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Entity_findUserByID(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -814,7 +825,7 @@ func (ec *executionContext) fieldContext_Entity_findUserByID(ctx context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _Manufacturer_id(ctx context.Context, field graphql.CollectedField, obj *model.Manufacturer) (ret graphql.Marshaler) {
+func (ec *executionContext) _Manufacturer_id(ctx context.Context, field graphql.CollectedField, obj *ent.Manufacturer) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Manufacturer_id(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -828,7 +839,7 @@ func (ec *executionContext) _Manufacturer_id(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return ec.resolvers.Manufacturer().ID(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -849,8 +860,8 @@ func (ec *executionContext) fieldContext_Manufacturer_id(ctx context.Context, fi
 	fc = &graphql.FieldContext{
 		Object:     "Manufacturer",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -993,9 +1004,9 @@ func (ec *executionContext) _Product_manufacturer(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Manufacturer)
+	res := resTmp.(*ent.Manufacturer)
 	fc.Result = res
-	return ec.marshalNManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋgraphᚋmodelᚐManufacturer(ctx, field.Selections, res)
+	return ec.marshalNManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋentᚐManufacturer(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Product_manufacturer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1528,9 +1539,9 @@ func (ec *executionContext) _Review_author(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*ent.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋentᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Review_author(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1608,7 +1619,7 @@ func (ec *executionContext) fieldContext_Review_product(ctx context.Context, fie
 	return fc, nil
 }
 
-func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_id(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1622,7 +1633,7 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return ec.resolvers.User().ID(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1643,8 +1654,8 @@ func (ec *executionContext) fieldContext_User_id(ctx context.Context, field grap
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ID does not have child fields")
 		},
@@ -1652,7 +1663,7 @@ func (ec *executionContext) fieldContext_User_id(ctx context.Context, field grap
 	return fc, nil
 }
 
-func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_email(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1666,7 +1677,7 @@ func (ec *executionContext) _User_email(ctx context.Context, field graphql.Colle
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Email, nil
+		return ec.resolvers.User().Email(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1687,8 +1698,8 @@ func (ec *executionContext) fieldContext_User_email(ctx context.Context, field g
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -1696,7 +1707,7 @@ func (ec *executionContext) fieldContext_User_email(ctx context.Context, field g
 	return fc, nil
 }
 
-func (ec *executionContext) _User_username(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_username(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_username(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1710,7 +1721,7 @@ func (ec *executionContext) _User_username(ctx context.Context, field graphql.Co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Username, nil
+		return ec.resolvers.User().Username(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1731,8 +1742,8 @@ func (ec *executionContext) fieldContext_User_username(ctx context.Context, fiel
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
 		},
@@ -1740,7 +1751,7 @@ func (ec *executionContext) fieldContext_User_username(ctx context.Context, fiel
 	return fc, nil
 }
 
-func (ec *executionContext) _User_reviews(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_reviews(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_reviews(ctx, field)
 	if err != nil {
 		return graphql.Null
@@ -1754,7 +1765,7 @@ func (ec *executionContext) _User_reviews(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Reviews, nil
+		return ec.resolvers.User().Reviews(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1772,8 +1783,8 @@ func (ec *executionContext) fieldContext_User_reviews(ctx context.Context, field
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -3636,9 +3647,9 @@ func (ec *executionContext) __Entity(ctx context.Context, sel ast.SelectionSet, 
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.Manufacturer:
+	case ent.Manufacturer:
 		return ec._Manufacturer(ctx, sel, &obj)
-	case *model.Manufacturer:
+	case *ent.Manufacturer:
 		if obj == nil {
 			return graphql.Null
 		}
@@ -3657,9 +3668,9 @@ func (ec *executionContext) __Entity(ctx context.Context, sel ast.SelectionSet, 
 			return graphql.Null
 		}
 		return ec._Review(ctx, sel, obj)
-	case model.User:
+	case ent.User:
 		return ec._User(ctx, sel, &obj)
-	case *model.User:
+	case *ent.User:
 		if obj == nil {
 			return graphql.Null
 		}
@@ -3774,7 +3785,7 @@ func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet) g
 
 var manufacturerImplementors = []string{"Manufacturer", "_Entity"}
 
-func (ec *executionContext) _Manufacturer(ctx context.Context, sel ast.SelectionSet, obj *model.Manufacturer) graphql.Marshaler {
+func (ec *executionContext) _Manufacturer(ctx context.Context, sel ast.SelectionSet, obj *ent.Manufacturer) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, manufacturerImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -3783,12 +3794,25 @@ func (ec *executionContext) _Manufacturer(ctx context.Context, sel ast.Selection
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Manufacturer")
 		case "id":
+			field := field
 
-			out.Values[i] = ec._Manufacturer_id(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Manufacturer_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4138,7 +4162,7 @@ func (ec *executionContext) _Review(ctx context.Context, sel ast.SelectionSet, o
 
 var userImplementors = []string{"User", "_Entity"}
 
-func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *model.User) graphql.Marshaler {
+func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *ent.User) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, userImplementors)
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
@@ -4147,30 +4171,82 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("User")
 		case "id":
+			field := field
 
-			out.Values[i] = ec._User_id(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "email":
+			field := field
 
-			out.Values[i] = ec._User_email(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_email(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "username":
+			field := field
 
-			out.Values[i] = ec._User_username(ctx, field, obj)
-
-			if out.Values[i] == graphql.Null {
-				invalids++
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_username(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
 			}
+
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		case "reviews":
+			field := field
 
-			out.Values[i] = ec._User_reviews(ctx, field, obj)
+			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_reviews(ctx, field, obj)
+				return res
+			}
 
+			out.Concurrently(i, func() graphql.Marshaler {
+				return innerFunc(ctx)
+
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4555,11 +4631,11 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) marshalNManufacturer2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋgraphᚋmodelᚐManufacturer(ctx context.Context, sel ast.SelectionSet, v model.Manufacturer) graphql.Marshaler {
+func (ec *executionContext) marshalNManufacturer2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋentᚐManufacturer(ctx context.Context, sel ast.SelectionSet, v ent.Manufacturer) graphql.Marshaler {
 	return ec._Manufacturer(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋgraphᚋmodelᚐManufacturer(ctx context.Context, sel ast.SelectionSet, v *model.Manufacturer) graphql.Marshaler {
+func (ec *executionContext) marshalNManufacturer2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋentᚐManufacturer(ctx context.Context, sel ast.SelectionSet, v *ent.Manufacturer) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -4617,11 +4693,11 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
-func (ec *executionContext) marshalNUser2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋentᚐUser(ctx context.Context, sel ast.SelectionSet, v ent.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋentᚐUser(ctx context.Context, sel ast.SelectionSet, v *ent.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")

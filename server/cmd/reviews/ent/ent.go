@@ -8,8 +8,10 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/manufacturer"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/product"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/review"
+	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/user"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -30,8 +32,10 @@ type OrderFunc func(*sql.Selector)
 // columnChecker returns a function indicates if the column exists in the given column.
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
-		product.Table: product.ValidColumn,
-		review.Table:  review.ValidColumn,
+		manufacturer.Table: manufacturer.ValidColumn,
+		product.Table:      product.ValidColumn,
+		review.Table:       review.ValidColumn,
+		user.Table:         user.ValidColumn,
 	}
 	check, ok := checks[table]
 	if !ok {

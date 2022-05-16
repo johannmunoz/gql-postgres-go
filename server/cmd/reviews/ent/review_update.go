@@ -14,6 +14,7 @@ import (
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/predicate"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/product"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/review"
+	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/user"
 )
 
 // ReviewUpdate is the builder for updating Review entities.
@@ -54,6 +55,25 @@ func (ru *ReviewUpdate) SetProduct(p *Product) *ReviewUpdate {
 	return ru.SetProductID(p.ID)
 }
 
+// SetAuthorID sets the "author" edge to the User entity by ID.
+func (ru *ReviewUpdate) SetAuthorID(id uuid.UUID) *ReviewUpdate {
+	ru.mutation.SetAuthorID(id)
+	return ru
+}
+
+// SetNillableAuthorID sets the "author" edge to the User entity by ID if the given value is not nil.
+func (ru *ReviewUpdate) SetNillableAuthorID(id *uuid.UUID) *ReviewUpdate {
+	if id != nil {
+		ru = ru.SetAuthorID(*id)
+	}
+	return ru
+}
+
+// SetAuthor sets the "author" edge to the User entity.
+func (ru *ReviewUpdate) SetAuthor(u *User) *ReviewUpdate {
+	return ru.SetAuthorID(u.ID)
+}
+
 // Mutation returns the ReviewMutation object of the builder.
 func (ru *ReviewUpdate) Mutation() *ReviewMutation {
 	return ru.mutation
@@ -62,6 +82,12 @@ func (ru *ReviewUpdate) Mutation() *ReviewMutation {
 // ClearProduct clears the "product" edge to the Product entity.
 func (ru *ReviewUpdate) ClearProduct() *ReviewUpdate {
 	ru.mutation.ClearProduct()
+	return ru
+}
+
+// ClearAuthor clears the "author" edge to the User entity.
+func (ru *ReviewUpdate) ClearAuthor() *ReviewUpdate {
+	ru.mutation.ClearAuthor()
 	return ru
 }
 
@@ -179,6 +205,41 @@ func (ru *ReviewUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if ru.mutation.AuthorCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   review.AuthorTable,
+			Columns: []string{review.AuthorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.AuthorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   review.AuthorTable,
+			Columns: []string{review.AuthorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, ru.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{review.Label}
@@ -223,6 +284,25 @@ func (ruo *ReviewUpdateOne) SetProduct(p *Product) *ReviewUpdateOne {
 	return ruo.SetProductID(p.ID)
 }
 
+// SetAuthorID sets the "author" edge to the User entity by ID.
+func (ruo *ReviewUpdateOne) SetAuthorID(id uuid.UUID) *ReviewUpdateOne {
+	ruo.mutation.SetAuthorID(id)
+	return ruo
+}
+
+// SetNillableAuthorID sets the "author" edge to the User entity by ID if the given value is not nil.
+func (ruo *ReviewUpdateOne) SetNillableAuthorID(id *uuid.UUID) *ReviewUpdateOne {
+	if id != nil {
+		ruo = ruo.SetAuthorID(*id)
+	}
+	return ruo
+}
+
+// SetAuthor sets the "author" edge to the User entity.
+func (ruo *ReviewUpdateOne) SetAuthor(u *User) *ReviewUpdateOne {
+	return ruo.SetAuthorID(u.ID)
+}
+
 // Mutation returns the ReviewMutation object of the builder.
 func (ruo *ReviewUpdateOne) Mutation() *ReviewMutation {
 	return ruo.mutation
@@ -231,6 +311,12 @@ func (ruo *ReviewUpdateOne) Mutation() *ReviewMutation {
 // ClearProduct clears the "product" edge to the Product entity.
 func (ruo *ReviewUpdateOne) ClearProduct() *ReviewUpdateOne {
 	ruo.mutation.ClearProduct()
+	return ruo
+}
+
+// ClearAuthor clears the "author" edge to the User entity.
+func (ruo *ReviewUpdateOne) ClearAuthor() *ReviewUpdateOne {
+	ruo.mutation.ClearAuthor()
 	return ruo
 }
 
@@ -364,6 +450,41 @@ func (ruo *ReviewUpdateOne) sqlSave(ctx context.Context) (_node *Review, err err
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUUID,
 					Column: product.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.AuthorCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   review.AuthorTable,
+			Columns: []string{review.AuthorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: user.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.AuthorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   review.AuthorTable,
+			Columns: []string{review.AuthorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: user.FieldID,
 				},
 			},
 		}

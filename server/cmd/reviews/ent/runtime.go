@@ -4,15 +4,23 @@ package ent
 
 import (
 	"github.com/google/uuid"
+	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/manufacturer"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/product"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/review"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/schema"
+	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/user"
 )
 
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	manufacturerFields := schema.Manufacturer{}.Fields()
+	_ = manufacturerFields
+	// manufacturerDescID is the schema descriptor for id field.
+	manufacturerDescID := manufacturerFields[0].Descriptor()
+	// manufacturer.DefaultID holds the default value on creation for the id field.
+	manufacturer.DefaultID = manufacturerDescID.Default.(func() uuid.UUID)
 	productFields := schema.Product{}.Fields()
 	_ = productFields
 	// productDescID is the schema descriptor for id field.
@@ -25,4 +33,10 @@ func init() {
 	reviewDescID := reviewFields[0].Descriptor()
 	// review.DefaultID holds the default value on creation for the id field.
 	review.DefaultID = reviewDescID.Default.(func() uuid.UUID)
+	userFields := schema.User{}.Fields()
+	_ = userFields
+	// userDescID is the schema descriptor for id field.
+	userDescID := userFields[0].Descriptor()
+	// user.DefaultID holds the default value on creation for the id field.
+	user.DefaultID = userDescID.Default.(func() uuid.UUID)
 }

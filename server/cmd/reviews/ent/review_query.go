@@ -15,6 +15,7 @@ import (
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/predicate"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/product"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/review"
+	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/user"
 )
 
 // ReviewQuery is the builder for querying Review entities.
@@ -28,6 +29,7 @@ type ReviewQuery struct {
 	predicates []predicate.Review
 	// eager-loading edges.
 	withProduct *ProductQuery
+	withAuthor  *UserQuery
 	withFKs     bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -80,6 +82,28 @@ func (rq *ReviewQuery) QueryProduct() *ProductQuery {
 			sqlgraph.From(review.Table, review.FieldID, selector),
 			sqlgraph.To(product.Table, product.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, review.ProductTable, review.ProductColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAuthor chains the current query on the "author" edge.
+func (rq *ReviewQuery) QueryAuthor() *UserQuery {
+	query := &UserQuery{config: rq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(review.Table, review.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, review.AuthorTable, review.AuthorColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -269,6 +293,7 @@ func (rq *ReviewQuery) Clone() *ReviewQuery {
 		order:       append([]OrderFunc{}, rq.order...),
 		predicates:  append([]predicate.Review{}, rq.predicates...),
 		withProduct: rq.withProduct.Clone(),
+		withAuthor:  rq.withAuthor.Clone(),
 		// clone intermediate query.
 		sql:    rq.sql.Clone(),
 		path:   rq.path,
@@ -284,6 +309,17 @@ func (rq *ReviewQuery) WithProduct(opts ...func(*ProductQuery)) *ReviewQuery {
 		opt(query)
 	}
 	rq.withProduct = query
+	return rq
+}
+
+// WithAuthor tells the query-builder to eager-load the nodes that are connected to
+// the "author" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *ReviewQuery) WithAuthor(opts ...func(*UserQuery)) *ReviewQuery {
+	query := &UserQuery{config: rq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withAuthor = query
 	return rq
 }
 
@@ -353,11 +389,12 @@ func (rq *ReviewQuery) sqlAll(ctx context.Context) ([]*Review, error) {
 		nodes       = []*Review{}
 		withFKs     = rq.withFKs
 		_spec       = rq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			rq.withProduct != nil,
+			rq.withAuthor != nil,
 		}
 	)
-	if rq.withProduct != nil {
+	if rq.withProduct != nil || rq.withAuthor != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -408,6 +445,35 @@ func (rq *ReviewQuery) sqlAll(ctx context.Context) ([]*Review, error) {
 			}
 			for i := range nodes {
 				nodes[i].Edges.Product = n
+			}
+		}
+	}
+
+	if query := rq.withAuthor; query != nil {
+		ids := make([]uuid.UUID, 0, len(nodes))
+		nodeids := make(map[uuid.UUID][]*Review)
+		for i := range nodes {
+			if nodes[i].user_reviews == nil {
+				continue
+			}
+			fk := *nodes[i].user_reviews
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(user.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "user_reviews" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Author = n
 			}
 		}
 	}

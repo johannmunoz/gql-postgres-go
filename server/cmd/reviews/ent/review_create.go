@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/product"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/review"
+	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/user"
 )
 
 // ReviewCreate is the builder for creating a Review entity.
@@ -58,6 +59,25 @@ func (rc *ReviewCreate) SetNillableProductID(id *uuid.UUID) *ReviewCreate {
 // SetProduct sets the "product" edge to the Product entity.
 func (rc *ReviewCreate) SetProduct(p *Product) *ReviewCreate {
 	return rc.SetProductID(p.ID)
+}
+
+// SetAuthorID sets the "author" edge to the User entity by ID.
+func (rc *ReviewCreate) SetAuthorID(id uuid.UUID) *ReviewCreate {
+	rc.mutation.SetAuthorID(id)
+	return rc
+}
+
+// SetNillableAuthorID sets the "author" edge to the User entity by ID if the given value is not nil.
+func (rc *ReviewCreate) SetNillableAuthorID(id *uuid.UUID) *ReviewCreate {
+	if id != nil {
+		rc = rc.SetAuthorID(*id)
+	}
+	return rc
+}
+
+// SetAuthor sets the "author" edge to the User entity.
+func (rc *ReviewCreate) SetAuthor(u *User) *ReviewCreate {
+	return rc.SetAuthorID(u.ID)
 }
 
 // Mutation returns the ReviewMutation object of the builder.
@@ -204,6 +224,26 @@ func (rc *ReviewCreate) createSpec() (*Review, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.product_reviews = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.AuthorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   review.AuthorTable,
+			Columns: []string{review.AuthorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUUID,
+					Column: user.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.user_reviews = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

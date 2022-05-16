@@ -9,6 +9,19 @@ import (
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent"
 )
 
+// The ManufacturerFunc type is an adapter to allow the use of ordinary
+// function as Manufacturer mutator.
+type ManufacturerFunc func(context.Context, *ent.ManufacturerMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ManufacturerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.ManufacturerMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ManufacturerMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The ProductFunc type is an adapter to allow the use of ordinary
 // function as Product mutator.
 type ProductFunc func(context.Context, *ent.ProductMutation) (ent.Value, error)
@@ -31,6 +44,19 @@ func (f ReviewFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 	mv, ok := m.(*ent.ReviewMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReviewMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The UserFunc type is an adapter to allow the use of ordinary
+// function as User mutator.
+type UserFunc func(context.Context, *ent.UserMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f UserFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.UserMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserMutation", m)
 	}
 	return f(ctx, mv)
 }

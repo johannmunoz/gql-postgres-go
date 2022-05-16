@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/product"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/review"
+	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/user"
 )
 
 // Review is the model entity for the Review schema.
@@ -23,15 +24,18 @@ type Review struct {
 	// The values are being populated by the ReviewQuery when eager-loading is set.
 	Edges           ReviewEdges `json:"edges"`
 	product_reviews *uuid.UUID
+	user_reviews    *uuid.UUID
 }
 
 // ReviewEdges holds the relations/edges for other nodes in the graph.
 type ReviewEdges struct {
 	// Product holds the value of the product edge.
 	Product *Product `json:"product,omitempty"`
+	// Author holds the value of the author edge.
+	Author *User `json:"author,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // ProductOrErr returns the Product value or an error if the edge
@@ -48,6 +52,20 @@ func (e ReviewEdges) ProductOrErr() (*Product, error) {
 	return nil, &NotLoadedError{edge: "product"}
 }
 
+// AuthorOrErr returns the Author value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ReviewEdges) AuthorOrErr() (*User, error) {
+	if e.loadedTypes[1] {
+		if e.Author == nil {
+			// The edge author was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: user.Label}
+		}
+		return e.Author, nil
+	}
+	return nil, &NotLoadedError{edge: "author"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Review) scanValues(columns []string) ([]interface{}, error) {
 	values := make([]interface{}, len(columns))
@@ -58,6 +76,8 @@ func (*Review) scanValues(columns []string) ([]interface{}, error) {
 		case review.FieldID:
 			values[i] = new(uuid.UUID)
 		case review.ForeignKeys[0]: // product_reviews
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case review.ForeignKeys[1]: // user_reviews
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Review", columns[i])
@@ -93,6 +113,13 @@ func (r *Review) assignValues(columns []string, values []interface{}) error {
 				r.product_reviews = new(uuid.UUID)
 				*r.product_reviews = *value.S.(*uuid.UUID)
 			}
+		case review.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field user_reviews", values[i])
+			} else if value.Valid {
+				r.user_reviews = new(uuid.UUID)
+				*r.user_reviews = *value.S.(*uuid.UUID)
+			}
 		}
 	}
 	return nil
@@ -101,6 +128,11 @@ func (r *Review) assignValues(columns []string, values []interface{}) error {
 // QueryProduct queries the "product" edge of the Review entity.
 func (r *Review) QueryProduct() *ProductQuery {
 	return (&ReviewClient{config: r.config}).QueryProduct(r)
+}
+
+// QueryAuthor queries the "author" edge of the Review entity.
+func (r *Review) QueryAuthor() *UserQuery {
+	return (&ReviewClient{config: r.config}).QueryAuthor(r)
 }
 
 // Update returns a builder for updating this Review.
