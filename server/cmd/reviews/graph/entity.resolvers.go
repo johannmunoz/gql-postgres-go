@@ -9,7 +9,6 @@ import (
 
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/graph/generated"
-	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/graph/model"
 )
 
 func (r *entityResolver) FindProductByID(ctx context.Context, id string) (*ent.Product, error) {
@@ -20,7 +19,7 @@ func (r *entityResolver) FindReviewByID(ctx context.Context, id string) (*ent.Re
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *entityResolver) FindUserByID(ctx context.Context, id string) (*model.User, error) {
+func (r *entityResolver) FindUserByID(ctx context.Context, id string) (*ent.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
