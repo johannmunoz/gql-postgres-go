@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/johannmunoz/gql_postgres_go/cmd/products/ent"
 	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph/generated"
+	"github.com/johannmunoz/gql_postgres_go/ent"
 )
 
 func (r *entityResolver) FindManufacturerByID(ctx context.Context, id string) (*ent.Manufacturer, error) {

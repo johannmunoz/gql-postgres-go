@@ -5,8 +5,8 @@ package graph
 
 import (
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/johannmunoz/gql_postgres_go/cmd/accounts/ent"
 	"github.com/johannmunoz/gql_postgres_go/cmd/accounts/graph/generated"
+	"github.com/johannmunoz/gql_postgres_go/ent"
 )
 
 type Resolver struct{ client *ent.Client }

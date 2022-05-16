@@ -8,11 +8,11 @@ import (
 	"log"
 
 	"github.com/google/uuid"
-	"github.com/johannmunoz/gql_postgres_go/cmd/products/ent"
-	"github.com/johannmunoz/gql_postgres_go/cmd/products/ent/manufacturer"
-	"github.com/johannmunoz/gql_postgres_go/cmd/products/ent/product"
 	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph/generated"
 	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph/model"
+	"github.com/johannmunoz/gql_postgres_go/ent"
+	"github.com/johannmunoz/gql_postgres_go/ent/manufacturer"
+	"github.com/johannmunoz/gql_postgres_go/ent/product"
 )
 
 func (r *manufacturerResolver) Products(ctx context.Context, obj *ent.Manufacturer) ([]*ent.Product, error) {

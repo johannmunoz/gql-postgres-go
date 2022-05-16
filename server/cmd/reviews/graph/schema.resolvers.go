@@ -9,11 +9,11 @@ import (
 	"log"
 
 	"github.com/google/uuid"
-	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent"
-	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/product"
-	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent/user"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/graph/generated"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/graph/model"
+	"github.com/johannmunoz/gql_postgres_go/ent"
+	"github.com/johannmunoz/gql_postgres_go/ent/product"
+	"github.com/johannmunoz/gql_postgres_go/ent/user"
 )
 
 func (r *manufacturerResolver) ID(ctx context.Context, obj *ent.Manufacturer) (string, error) {
@@ -46,19 +46,19 @@ func (r *productResolver) ID(ctx context.Context, obj *ent.Product) (string, err
 }
 
 func (r *productResolver) Manufacturer(ctx context.Context, obj *ent.Product) (*ent.Manufacturer, error) {
-	panic(fmt.Errorf("not implemented"))
+	panic(fmt.Errorf("not implemented Manufacturer"))
 }
 
 func (r *productResolver) Reviews(ctx context.Context, obj *ent.Product) ([]*ent.Review, error) {
-	panic(fmt.Errorf("not implemented"))
+	panic(fmt.Errorf("not implemented Reviews"))
 }
 
 func (r *queryResolver) Reviews(ctx context.Context) ([]*ent.Review, error) {
-	panic(fmt.Errorf("not implemented"))
+	return r.client.Review.Query().All(ctx)
 }
 
 func (r *queryResolver) Review(ctx context.Context, id string) (*ent.Review, error) {
-	panic(fmt.Errorf("not implemented"))
+	panic(fmt.Errorf("not implemented Review"))
 }
 
 func (r *reviewResolver) ID(ctx context.Context, obj *ent.Review) (string, error) {
@@ -66,27 +66,23 @@ func (r *reviewResolver) ID(ctx context.Context, obj *ent.Review) (string, error
 }
 
 func (r *reviewResolver) Author(ctx context.Context, obj *ent.Review) (*ent.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	authorId, err := obj.QueryAuthor().OnlyID(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return r.client.User.Query().Where(user.IDEQ(authorId)).Only(ctx)
 }
 
 func (r *reviewResolver) Product(ctx context.Context, obj *ent.Review) (*ent.Product, error) {
-	panic(fmt.Errorf("not implemented"))
+	panic(fmt.Errorf("not implemented Product"))
 }
 
 func (r *userResolver) ID(ctx context.Context, obj *ent.User) (string, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *userResolver) Email(ctx context.Context, obj *ent.User) (string, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *userResolver) Username(ctx context.Context, obj *ent.User) (string, error) {
-	panic(fmt.Errorf("not implemented"))
+	return obj.ID.String(), nil
 }
 
 func (r *userResolver) Reviews(ctx context.Context, obj *ent.User) ([]*ent.Review, error) {
-	panic(fmt.Errorf("not implemented"))
+	panic(fmt.Errorf("not implemented Reviews"))
 }
 
 // Manufacturer returns generated.ManufacturerResolver implementation.
@@ -113,3 +109,16 @@ type productResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type reviewResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *userResolver) Email(ctx context.Context, obj *ent.User) (string, error) {
+	panic(fmt.Errorf("not implemented Email"))
+}
+func (r *userResolver) Username(ctx context.Context, obj *ent.User) (string, error) {
+	panic(fmt.Errorf("not implemented Username"))
+}

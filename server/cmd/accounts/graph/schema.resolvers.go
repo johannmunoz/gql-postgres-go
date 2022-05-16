@@ -7,9 +7,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/johannmunoz/gql_postgres_go/cmd/accounts/ent"
 	"github.com/johannmunoz/gql_postgres_go/cmd/accounts/graph/generated"
 	"github.com/johannmunoz/gql_postgres_go/cmd/accounts/graph/model"
+	"github.com/johannmunoz/gql_postgres_go/ent"
 )
 
 func (r *mutationResolver) UserCreate(ctx context.Context, input model.NewUser) (*ent.User, error) {

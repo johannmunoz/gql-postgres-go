@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/graph/generated"
+	"github.com/johannmunoz/gql_postgres_go/ent"
 )
 
 func (r *entityResolver) FindProductByID(ctx context.Context, id string) (*ent.Product, error) {

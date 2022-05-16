@@ -8,10 +8,10 @@ import (
 	"log"
 
 	"github.com/google/uuid"
-	"github.com/johannmunoz/gql_postgres_go/cmd/products/ent"
-	"github.com/johannmunoz/gql_postgres_go/cmd/products/ent/manufacturer"
 	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph/generated"
 	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph/model"
+	"github.com/johannmunoz/gql_postgres_go/ent"
+	"github.com/johannmunoz/gql_postgres_go/ent/manufacturer"
 )
 
 func (r *manufacturerResolver) ID(ctx context.Context, obj *ent.Manufacturer) (string, error) {

@@ -5,14 +5,20 @@ package graph
 
 import (
 	"context"
-	"fmt"
+	"log"
 
-	"github.com/johannmunoz/gql_postgres_go/cmd/accounts/ent"
+	"github.com/google/uuid"
 	"github.com/johannmunoz/gql_postgres_go/cmd/accounts/graph/generated"
+	"github.com/johannmunoz/gql_postgres_go/ent"
+	"github.com/johannmunoz/gql_postgres_go/ent/user"
 )
 
 func (r *entityResolver) FindUserByID(ctx context.Context, id string) (*ent.User, error) {
-	panic(fmt.Errorf("FindUserByID not implemented"))
+	userId, err := uuid.Parse(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return r.client.User.Query().Where(user.IDEQ(userId)).Only(ctx)
 }
 
 // Entity returns generated.EntityResolver implementation.

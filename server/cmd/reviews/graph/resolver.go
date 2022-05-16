@@ -2,8 +2,8 @@ package graph
 
 import (
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/ent"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/graph/generated"
+	"github.com/johannmunoz/gql_postgres_go/ent"
 )
 
 // This file will not be regenerated automatically.
