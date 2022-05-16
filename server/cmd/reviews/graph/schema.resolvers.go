@@ -17,7 +17,7 @@ import (
 )
 
 func (r *manufacturerResolver) ID(ctx context.Context, obj *ent.Manufacturer) (string, error) {
-	panic(fmt.Errorf("not implemented"))
+	return obj.ID.String(), nil
 }
 
 func (r *mutationResolver) ReviewCreate(ctx context.Context, input model.NewReview, authorID string, productID string) (*ent.Review, error) {
@@ -39,6 +39,20 @@ func (r *mutationResolver) ReviewCreate(ctx context.Context, input model.NewRevi
 	}
 
 	return r.client.Review.Create().SetBody(input.Body).SetProductID(product.ID).SetAuthorID(author.ID).Save(ctx)
+}
+
+func (r *mutationResolver) ReviewDelete(ctx context.Context, id string) (bool, error) {
+	uuid, parseErr := uuid.Parse(id)
+	if parseErr != nil {
+		log.Fatal(parseErr)
+	}
+	err := r.client.Review.DeleteOneID(uuid).Exec(ctx)
+
+	if err != nil {
+		log.Fatal(err)
+		return false, nil
+	}
+	return true, nil
 }
 
 func (r *productResolver) ID(ctx context.Context, obj *ent.Product) (string, error) {
@@ -74,7 +88,7 @@ func (r *reviewResolver) Author(ctx context.Context, obj *ent.Review) (*ent.User
 }
 
 func (r *reviewResolver) Product(ctx context.Context, obj *ent.Review) (*ent.Product, error) {
-	panic(fmt.Errorf("not implemented Product"))
+	return obj.QueryProduct().Only(ctx)
 }
 
 func (r *userResolver) ID(ctx context.Context, obj *ent.User) (string, error) {
@@ -82,7 +96,7 @@ func (r *userResolver) ID(ctx context.Context, obj *ent.User) (string, error) {
 }
 
 func (r *userResolver) Reviews(ctx context.Context, obj *ent.User) ([]*ent.Review, error) {
-	panic(fmt.Errorf("not implemented Reviews"))
+	return obj.QueryReviews().All(ctx)
 }
 
 // Manufacturer returns generated.ManufacturerResolver implementation.
@@ -109,16 +123,3 @@ type productResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type reviewResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *userResolver) Email(ctx context.Context, obj *ent.User) (string, error) {
-	panic(fmt.Errorf("not implemented Email"))
-}
-func (r *userResolver) Username(ctx context.Context, obj *ent.User) (string, error) {
-	panic(fmt.Errorf("not implemented Username"))
-}

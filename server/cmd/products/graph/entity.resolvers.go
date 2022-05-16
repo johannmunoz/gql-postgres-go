@@ -6,9 +6,12 @@ package graph
 import (
 	"context"
 	"fmt"
+	"log"
 
+	"github.com/google/uuid"
 	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph/generated"
 	"github.com/johannmunoz/gql_postgres_go/ent"
+	"github.com/johannmunoz/gql_postgres_go/ent/product"
 )
 
 func (r *entityResolver) FindManufacturerByID(ctx context.Context, id string) (*ent.Manufacturer, error) {
@@ -16,7 +19,11 @@ func (r *entityResolver) FindManufacturerByID(ctx context.Context, id string) (*
 }
 
 func (r *entityResolver) FindProductByID(ctx context.Context, id string) (*ent.Product, error) {
-	panic(fmt.Errorf("FindProductByID not implemented"))
+	productId, err := uuid.Parse(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return r.client.Product.Query().Where(product.IDEQ(productId)).Only(ctx)
 }
 
 // Entity returns generated.EntityResolver implementation.

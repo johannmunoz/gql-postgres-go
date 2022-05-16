@@ -9,6 +9,7 @@ extend type Mutation {
     authorId: String!
     productId: String!
   ): Review!
+  reviewDelete(id: String!): Boolean!
 }
 
 type Review @key(fields: "id") {
