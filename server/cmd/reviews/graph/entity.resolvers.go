@@ -5,22 +5,38 @@ package graph
 
 import (
 	"context"
-	"fmt"
+	"log"
 
+	"github.com/google/uuid"
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/graph/generated"
 	"github.com/johannmunoz/gql_postgres_go/ent"
+	"github.com/johannmunoz/gql_postgres_go/ent/product"
+	"github.com/johannmunoz/gql_postgres_go/ent/review"
+	"github.com/johannmunoz/gql_postgres_go/ent/user"
 )
 
 func (r *entityResolver) FindProductByID(ctx context.Context, id string) (*ent.Product, error) {
-	panic(fmt.Errorf("not implemented"))
+	productId, err := uuid.Parse(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return r.client.Product.Query().Where(product.IDEQ(productId)).Only(ctx)
 }
 
 func (r *entityResolver) FindReviewByID(ctx context.Context, id string) (*ent.Review, error) {
-	panic(fmt.Errorf("not implemented"))
+	reviewId, err := uuid.Parse(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return r.client.Review.Query().Where(review.IDEQ(reviewId)).Only(ctx)
 }
 
 func (r *entityResolver) FindUserByID(ctx context.Context, id string) (*ent.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	userId, err := uuid.Parse(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return r.client.User.Query().Where(user.IDEQ(userId)).Only(ctx)
 }
 
 // Entity returns generated.EntityResolver implementation.

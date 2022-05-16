@@ -23,11 +23,7 @@ func (r *mutationResolver) ManufacturerCreate(ctx context.Context, input model.N
 }
 
 func (r *productResolver) Manufacturer(ctx context.Context, obj *ent.Product) (*ent.Manufacturer, error) {
-	manufacturerId, err := obj.QueryManufacturer().OnlyID(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return r.client.Manufacturer.Query().Where(manufacturer.IDEQ(manufacturerId)).Only(ctx)
+	return obj.QueryManufacturer().Only(ctx)
 }
 
 func (r *queryResolver) Manufacturers(ctx context.Context) ([]*ent.Manufacturer, error) {

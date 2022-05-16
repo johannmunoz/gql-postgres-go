@@ -5,7 +5,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/google/uuid"
@@ -13,6 +12,7 @@ import (
 	"github.com/johannmunoz/gql_postgres_go/cmd/reviews/graph/model"
 	"github.com/johannmunoz/gql_postgres_go/ent"
 	"github.com/johannmunoz/gql_postgres_go/ent/product"
+	"github.com/johannmunoz/gql_postgres_go/ent/review"
 	"github.com/johannmunoz/gql_postgres_go/ent/user"
 )
 
@@ -60,11 +60,11 @@ func (r *productResolver) ID(ctx context.Context, obj *ent.Product) (string, err
 }
 
 func (r *productResolver) Manufacturer(ctx context.Context, obj *ent.Product) (*ent.Manufacturer, error) {
-	panic(fmt.Errorf("not implemented Manufacturer"))
+	return obj.QueryManufacturer().Only(ctx)
 }
 
 func (r *productResolver) Reviews(ctx context.Context, obj *ent.Product) ([]*ent.Review, error) {
-	panic(fmt.Errorf("not implemented Reviews"))
+	return obj.QueryReviews().All(ctx)
 }
 
 func (r *queryResolver) Reviews(ctx context.Context) ([]*ent.Review, error) {
@@ -72,7 +72,11 @@ func (r *queryResolver) Reviews(ctx context.Context) ([]*ent.Review, error) {
 }
 
 func (r *queryResolver) Review(ctx context.Context, id string) (*ent.Review, error) {
-	panic(fmt.Errorf("not implemented Review"))
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return r.client.Review.Query().Where(review.IDEQ(uuid)).Only(ctx)
 }
 
 func (r *reviewResolver) ID(ctx context.Context, obj *ent.Review) (string, error) {
@@ -80,11 +84,7 @@ func (r *reviewResolver) ID(ctx context.Context, obj *ent.Review) (string, error
 }
 
 func (r *reviewResolver) Author(ctx context.Context, obj *ent.Review) (*ent.User, error) {
-	authorId, err := obj.QueryAuthor().OnlyID(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return r.client.User.Query().Where(user.IDEQ(authorId)).Only(ctx)
+	return obj.QueryAuthor().Only(ctx)
 }
 
 func (r *reviewResolver) Product(ctx context.Context, obj *ent.Review) (*ent.Product, error) {
