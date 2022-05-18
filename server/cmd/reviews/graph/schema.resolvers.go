@@ -59,14 +59,6 @@ func (r *productResolver) ID(ctx context.Context, obj *ent.Product) (string, err
 	return obj.ID.String(), nil
 }
 
-func (r *productResolver) Manufacturer(ctx context.Context, obj *ent.Product) (*ent.Manufacturer, error) {
-	return obj.QueryManufacturer().Only(ctx)
-}
-
-func (r *productResolver) Reviews(ctx context.Context, obj *ent.Product) ([]*ent.Review, error) {
-	return obj.QueryReviews().All(ctx)
-}
-
 func (r *queryResolver) Reviews(ctx context.Context) ([]*ent.Review, error) {
 	return r.client.Review.Query().All(ctx)
 }
@@ -83,20 +75,8 @@ func (r *reviewResolver) ID(ctx context.Context, obj *ent.Review) (string, error
 	return obj.ID.String(), nil
 }
 
-func (r *reviewResolver) Author(ctx context.Context, obj *ent.Review) (*ent.User, error) {
-	return obj.QueryAuthor().Only(ctx)
-}
-
-func (r *reviewResolver) Product(ctx context.Context, obj *ent.Review) (*ent.Product, error) {
-	return obj.QueryProduct().Only(ctx)
-}
-
 func (r *userResolver) ID(ctx context.Context, obj *ent.User) (string, error) {
 	return obj.ID.String(), nil
-}
-
-func (r *userResolver) Reviews(ctx context.Context, obj *ent.User) ([]*ent.Review, error) {
-	return obj.QueryReviews().All(ctx)
 }
 
 // Manufacturer returns generated.ManufacturerResolver implementation.

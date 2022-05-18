@@ -22,12 +22,8 @@ func (r *mutationResolver) ManufacturerCreate(ctx context.Context, input model.N
 	return r.client.Manufacturer.Create().SetName(input.Name).Save(ctx)
 }
 
-func (r *productResolver) Manufacturer(ctx context.Context, obj *ent.Product) (*ent.Manufacturer, error) {
-	return obj.QueryManufacturer().Only(ctx)
-}
-
-func (r *queryResolver) Manufacturers(ctx context.Context) ([]*ent.Manufacturer, error) {
-	return r.client.Manufacturer.Query().All(ctx)
+func (r *queryResolver) Manufacturers(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ManufacturerConnection, error) {
+	return r.client.Manufacturer.Query().Paginate(ctx, after, first, before, last)
 }
 
 func (r *queryResolver) Manufacturer(ctx context.Context, id string) (*ent.Manufacturer, error) {

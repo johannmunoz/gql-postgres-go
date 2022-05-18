@@ -1,6 +1,11 @@
 extend type Query {
-  manufacturers: [Manufacturer]
-  manufacturer(id: String!): Manufacturer
+  manufacturers(
+    before: Cursor
+    after: Cursor
+    first: Int
+    last: Int
+  ): ManufacturerConnection!
+  manufacturer(id: String!): Manufacturer!
 }
 
 extend type Mutation {
@@ -11,9 +16,20 @@ extend type Product {
   manufacturer: Manufacturer!
 }
 
-type Manufacturer @key(fields: "id") {
-  id: String!
+type Manufacturer implements Node @key(fields: "id") {
+  id: ID!
   name: String!
+}
+
+type ManufacturerConnection {
+  edges: [ManufacturerEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ManufacturerEdge {
+  node: Manufacturer
+  cursor: Cursor!
 }
 
 input NewManufaturer {

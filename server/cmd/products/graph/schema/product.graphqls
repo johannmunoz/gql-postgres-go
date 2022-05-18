@@ -1,6 +1,10 @@
 extend type Query {
-  topProducts(first: Int = 5): [Product!]
-  products: [Product!]
+  products(
+    before: Cursor
+    after: Cursor
+    first: Int
+    last: Int
+  ): ProductConnection!
   product(id: String!): Product!
 }
 
@@ -9,14 +13,30 @@ extend type Mutation {
 }
 
 extend type Manufacturer {
-  products: [Product!]
+  products(
+    before: Cursor
+    after: Cursor
+    first: Int
+    last: Int
+  ): ProductConnection!
 }
 
-type Product @key(fields: "id") {
-  id: String!
+type Product implements Node @key(fields: "id") {
+  id: ID!
   upc: String!
   name: String!
   price: Int!
+}
+
+type ProductConnection {
+  edges: [ProductEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ProductEdge {
+  node: Product
+  cursor: Cursor!
 }
 
 input NewProduct {

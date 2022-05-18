@@ -27,11 +27,11 @@ extend type User @key(fields: "id") {
 }
 
 extend type Manufacturer @key(fields: "id") {
-  id: String! @external
+  id: ID! @external
 }
 
 extend type Product @key(fields: "id") {
-  id: String! @external
+  id: ID! @external
   manufacturer: Manufacturer! @external
   reviews: [Review!]
 }
