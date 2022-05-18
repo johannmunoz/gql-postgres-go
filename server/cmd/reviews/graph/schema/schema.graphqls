@@ -1,5 +1,10 @@
 extend type Query {
-  reviews: [Review!]
+  reviews(
+    before: Cursor
+    after: Cursor
+    first: Int
+    last: Int
+  ): ReviewConnection!
   review(id: String!): Review!
 }
 
@@ -23,7 +28,12 @@ extend type User @key(fields: "id") {
   id: ID! @external
   email: String! @external
   username: String! @external
-  reviews: [Review!]
+  reviews(
+    before: Cursor
+    after: Cursor
+    first: Int
+    last: Int
+  ): ReviewConnection!
 }
 
 extend type Manufacturer @key(fields: "id") {
@@ -33,7 +43,23 @@ extend type Manufacturer @key(fields: "id") {
 extend type Product @key(fields: "id") {
   id: ID! @external
   manufacturer: Manufacturer! @external
-  reviews: [Review!]
+  reviews(
+    before: Cursor
+    after: Cursor
+    first: Int
+    last: Int
+  ): ReviewConnection!
+}
+
+type ReviewConnection {
+  edges: [ReviewEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ReviewEdge {
+  node: Review
+  cursor: Cursor!
 }
 
 input NewReview {

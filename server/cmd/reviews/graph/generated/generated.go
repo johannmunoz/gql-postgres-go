@@ -76,12 +76,12 @@ type ComplexityRoot struct {
 	Product struct {
 		ID           func(childComplexity int) int
 		Manufacturer func(childComplexity int) int
-		Reviews      func(childComplexity int) int
+		Reviews      func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int) int
 	}
 
 	Query struct {
 		Review             func(childComplexity int, id string) int
-		Reviews            func(childComplexity int) int
+		Reviews            func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int) int
 		__resolve__service func(childComplexity int) int
 		__resolve_entities func(childComplexity int, representations []map[string]interface{}) int
 	}
@@ -93,10 +93,21 @@ type ComplexityRoot struct {
 		Product func(childComplexity int) int
 	}
 
+	ReviewConnection struct {
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
+	}
+
+	ReviewEdge struct {
+		Cursor func(childComplexity int) int
+		Node   func(childComplexity int) int
+	}
+
 	User struct {
 		Email    func(childComplexity int) int
 		ID       func(childComplexity int) int
-		Reviews  func(childComplexity int) int
+		Reviews  func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int) int
 		Username func(childComplexity int) int
 	}
 
@@ -119,9 +130,11 @@ type MutationResolver interface {
 }
 type ProductResolver interface {
 	ID(ctx context.Context, obj *ent.Product) (string, error)
+
+	Reviews(ctx context.Context, obj *ent.Product, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ReviewConnection, error)
 }
 type QueryResolver interface {
-	Reviews(ctx context.Context) ([]*ent.Review, error)
+	Reviews(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ReviewConnection, error)
 	Review(ctx context.Context, id string) (*ent.Review, error)
 }
 type ReviewResolver interface {
@@ -129,6 +142,8 @@ type ReviewResolver interface {
 }
 type UserResolver interface {
 	ID(ctx context.Context, obj *ent.User) (string, error)
+
+	Reviews(ctx context.Context, obj *ent.User, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ReviewConnection, error)
 }
 
 type executableSchema struct {
@@ -260,7 +275,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Product.Reviews(childComplexity), true
+		args, err := ec.field_Product_reviews_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Product.Reviews(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int)), true
 
 	case "Query.review":
 		if e.complexity.Query.Review == nil {
@@ -279,7 +299,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.Reviews(childComplexity), true
+		args, err := ec.field_Query_reviews_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Reviews(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int)), true
 
 	case "Query._service":
 		if e.complexity.Query.__resolve__service == nil {
@@ -328,6 +353,41 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Review.Product(childComplexity), true
 
+	case "ReviewConnection.edges":
+		if e.complexity.ReviewConnection.Edges == nil {
+			break
+		}
+
+		return e.complexity.ReviewConnection.Edges(childComplexity), true
+
+	case "ReviewConnection.pageInfo":
+		if e.complexity.ReviewConnection.PageInfo == nil {
+			break
+		}
+
+		return e.complexity.ReviewConnection.PageInfo(childComplexity), true
+
+	case "ReviewConnection.totalCount":
+		if e.complexity.ReviewConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.ReviewConnection.TotalCount(childComplexity), true
+
+	case "ReviewEdge.cursor":
+		if e.complexity.ReviewEdge.Cursor == nil {
+			break
+		}
+
+		return e.complexity.ReviewEdge.Cursor(childComplexity), true
+
+	case "ReviewEdge.node":
+		if e.complexity.ReviewEdge.Node == nil {
+			break
+		}
+
+		return e.complexity.ReviewEdge.Node(childComplexity), true
+
 	case "User.email":
 		if e.complexity.User.Email == nil {
 			break
@@ -347,7 +407,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.User.Reviews(childComplexity), true
+		args, err := ec.field_User_reviews_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.User.Reviews(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int)), true
 
 	case "User.username":
 		if e.complexity.User.Username == nil {
@@ -433,7 +498,12 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 
 var sources = []*ast.Source{
 	{Name: "graph/schema/schema.graphqls", Input: `extend type Query {
-  reviews: [Review!]
+  reviews(
+    before: Cursor
+    after: Cursor
+    first: Int
+    last: Int
+  ): ReviewConnection!
   review(id: String!): Review!
 }
 
@@ -457,7 +527,12 @@ extend type User @key(fields: "id") {
   id: ID! @external
   email: String! @external
   username: String! @external
-  reviews: [Review!]
+  reviews(
+    before: Cursor
+    after: Cursor
+    first: Int
+    last: Int
+  ): ReviewConnection!
 }
 
 extend type Manufacturer @key(fields: "id") {
@@ -467,7 +542,23 @@ extend type Manufacturer @key(fields: "id") {
 extend type Product @key(fields: "id") {
   id: ID! @external
   manufacturer: Manufacturer! @external
-  reviews: [Review!]
+  reviews(
+    before: Cursor
+    after: Cursor
+    first: Int
+    last: Int
+  ): ReviewConnection!
+}
+
+type ReviewConnection {
+  edges: [ReviewEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ReviewEdge {
+  node: Review
+  cursor: Cursor!
 }
 
 input NewReview {
@@ -619,6 +710,48 @@ func (ec *executionContext) field_Mutation_reviewDelete_args(ctx context.Context
 	return args, nil
 }
 
+func (ec *executionContext) field_Product_reviews_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *ent.Cursor
+	if tmp, ok := rawArgs["before"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
+		arg0, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["before"] = arg0
+	var arg1 *ent.Cursor
+	if tmp, ok := rawArgs["after"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+		arg1, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["after"] = arg1
+	var arg2 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg2
+	var arg3 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg3, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg3
+	return args, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -661,6 +794,90 @@ func (ec *executionContext) field_Query_review_args(ctx context.Context, rawArgs
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_reviews_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *ent.Cursor
+	if tmp, ok := rawArgs["before"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
+		arg0, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["before"] = arg0
+	var arg1 *ent.Cursor
+	if tmp, ok := rawArgs["after"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+		arg1, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["after"] = arg1
+	var arg2 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg2
+	var arg3 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg3, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_User_reviews_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *ent.Cursor
+	if tmp, ok := rawArgs["before"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("before"))
+		arg0, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["before"] = arg0
+	var arg1 *ent.Cursor
+	if tmp, ok := rawArgs["after"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+		arg1, err = ec.unmarshalOCursor2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["after"] = arg1
+	var arg2 *int
+	if tmp, ok := rawArgs["first"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
+		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["first"] = arg2
+	var arg3 *int
+	if tmp, ok := rawArgs["last"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("last"))
+		arg3, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["last"] = arg3
 	return args, nil
 }
 
@@ -1335,18 +1552,21 @@ func (ec *executionContext) _Product_reviews(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Reviews(ctx)
+		return ec.resolvers.Product().Reviews(rctx, obj, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.Review)
+	res := resTmp.(*ent.ReviewConnection)
 	fc.Result = res
-	return ec.marshalOReview2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewᚄ(ctx, field.Selections, res)
+	return ec.marshalNReviewConnection2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Product_reviews(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1354,20 +1574,29 @@ func (ec *executionContext) fieldContext_Product_reviews(ctx context.Context, fi
 		Object:     "Product",
 		Field:      field,
 		IsMethod:   true,
-		IsResolver: false,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Review_id(ctx, field)
-			case "body":
-				return ec.fieldContext_Review_body(ctx, field)
-			case "author":
-				return ec.fieldContext_Review_author(ctx, field)
-			case "product":
-				return ec.fieldContext_Review_product(ctx, field)
+			case "edges":
+				return ec.fieldContext_ReviewConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_ReviewConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_ReviewConnection_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Review", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ReviewConnection", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Product_reviews_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
@@ -1386,18 +1615,21 @@ func (ec *executionContext) _Query_reviews(ctx context.Context, field graphql.Co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Reviews(rctx)
+		return ec.resolvers.Query().Reviews(rctx, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.Review)
+	res := resTmp.(*ent.ReviewConnection)
 	fc.Result = res
-	return ec.marshalOReview2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewᚄ(ctx, field.Selections, res)
+	return ec.marshalNReviewConnection2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_reviews(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1408,17 +1640,26 @@ func (ec *executionContext) fieldContext_Query_reviews(ctx context.Context, fiel
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Review_id(ctx, field)
-			case "body":
-				return ec.fieldContext_Review_body(ctx, field)
-			case "author":
-				return ec.fieldContext_Review_author(ctx, field)
-			case "product":
-				return ec.fieldContext_Review_product(ctx, field)
+			case "edges":
+				return ec.fieldContext_ReviewConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_ReviewConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_ReviewConnection_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Review", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ReviewConnection", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_reviews_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
@@ -1914,6 +2155,249 @@ func (ec *executionContext) fieldContext_Review_product(ctx context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _ReviewConnection_edges(ctx context.Context, field graphql.CollectedField, obj *ent.ReviewConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ReviewConnection_edges(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Edges, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*ent.ReviewEdge)
+	fc.Result = res
+	return ec.marshalNReviewEdge2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewEdgeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ReviewConnection_edges(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReviewConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "node":
+				return ec.fieldContext_ReviewEdge_node(ctx, field)
+			case "cursor":
+				return ec.fieldContext_ReviewEdge_cursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ReviewEdge", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReviewConnection_pageInfo(ctx context.Context, field graphql.CollectedField, obj *ent.ReviewConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ReviewConnection_pageInfo(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PageInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.PageInfo)
+	fc.Result = res
+	return ec.marshalNPageInfo2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐPageInfo(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ReviewConnection_pageInfo(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReviewConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "hasNextPage":
+				return ec.fieldContext_PageInfo_hasNextPage(ctx, field)
+			case "hasPreviousPage":
+				return ec.fieldContext_PageInfo_hasPreviousPage(ctx, field)
+			case "startCursor":
+				return ec.fieldContext_PageInfo_startCursor(ctx, field)
+			case "endCursor":
+				return ec.fieldContext_PageInfo_endCursor(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PageInfo", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReviewConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *ent.ReviewConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ReviewConnection_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ReviewConnection_totalCount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReviewConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReviewEdge_node(ctx context.Context, field graphql.CollectedField, obj *ent.ReviewEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ReviewEdge_node(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Node, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*ent.Review)
+	fc.Result = res
+	return ec.marshalOReview2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReview(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ReviewEdge_node(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReviewEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Review_id(ctx, field)
+			case "body":
+				return ec.fieldContext_Review_body(ctx, field)
+			case "author":
+				return ec.fieldContext_Review_author(ctx, field)
+			case "product":
+				return ec.fieldContext_Review_product(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Review", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReviewEdge_cursor(ctx context.Context, field graphql.CollectedField, obj *ent.ReviewEdge) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ReviewEdge_cursor(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(ent.Cursor)
+	fc.Result = res
+	return ec.marshalNCursor2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐCursor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ReviewEdge_cursor(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReviewEdge",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Cursor does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *ent.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_id(ctx, field)
 	if err != nil {
@@ -2060,18 +2544,21 @@ func (ec *executionContext) _User_reviews(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Reviews(ctx)
+		return ec.resolvers.User().Reviews(rctx, obj, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.([]*ent.Review)
+	res := resTmp.(*ent.ReviewConnection)
 	fc.Result = res
-	return ec.marshalOReview2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewᚄ(ctx, field.Selections, res)
+	return ec.marshalNReviewConnection2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewConnection(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_User_reviews(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2079,20 +2566,29 @@ func (ec *executionContext) fieldContext_User_reviews(ctx context.Context, field
 		Object:     "User",
 		Field:      field,
 		IsMethod:   true,
-		IsResolver: false,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "id":
-				return ec.fieldContext_Review_id(ctx, field)
-			case "body":
-				return ec.fieldContext_Review_body(ctx, field)
-			case "author":
-				return ec.fieldContext_Review_author(ctx, field)
-			case "product":
-				return ec.fieldContext_Review_product(ctx, field)
+			case "edges":
+				return ec.fieldContext_ReviewConnection_edges(ctx, field)
+			case "pageInfo":
+				return ec.fieldContext_ReviewConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_ReviewConnection_totalCount(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Review", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ReviewConnection", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_User_reviews_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return
 	}
 	return fc, nil
 }
@@ -4279,6 +4775,9 @@ func (ec *executionContext) _Product(ctx context.Context, sel ast.SelectionSet, 
 					}
 				}()
 				res = ec._Product_reviews(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -4326,6 +4825,9 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_reviews(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -4516,6 +5018,80 @@ func (ec *executionContext) _Review(ctx context.Context, sel ast.SelectionSet, o
 	return out
 }
 
+var reviewConnectionImplementors = []string{"ReviewConnection"}
+
+func (ec *executionContext) _ReviewConnection(ctx context.Context, sel ast.SelectionSet, obj *ent.ReviewConnection) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, reviewConnectionImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReviewConnection")
+		case "edges":
+
+			out.Values[i] = ec._ReviewConnection_edges(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "pageInfo":
+
+			out.Values[i] = ec._ReviewConnection_pageInfo(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "totalCount":
+
+			out.Values[i] = ec._ReviewConnection_totalCount(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var reviewEdgeImplementors = []string{"ReviewEdge"}
+
+func (ec *executionContext) _ReviewEdge(ctx context.Context, sel ast.SelectionSet, obj *ent.ReviewEdge) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, reviewEdgeImplementors)
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReviewEdge")
+		case "node":
+
+			out.Values[i] = ec._ReviewEdge_node(ctx, field, obj)
+
+		case "cursor":
+
+			out.Values[i] = ec._ReviewEdge_cursor(ctx, field, obj)
+
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var userImplementors = []string{"User", "_Entity"}
 
 func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *ent.User) graphql.Marshaler {
@@ -4570,6 +5146,9 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_reviews(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			}
 
@@ -4946,6 +5525,16 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNCursor2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐCursor(ctx context.Context, v interface{}) (ent.Cursor, error) {
+	var res ent.Cursor
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNCursor2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐCursor(ctx context.Context, sel ast.SelectionSet, v ent.Cursor) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4953,6 +5542,21 @@ func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface
 
 func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
 	res := graphql.MarshalID(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -4974,6 +5578,10 @@ func (ec *executionContext) marshalNManufacturer2ᚖgithubᚗcomᚋjohannmunoz�
 func (ec *executionContext) unmarshalNNewReview2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋreviewsᚋgraphᚋmodelᚐNewReview(ctx context.Context, v interface{}) (model.NewReview, error) {
 	res, err := ec.unmarshalInputNewReview(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNPageInfo2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v ent.PageInfo) graphql.Marshaler {
+	return ec._PageInfo(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNProduct2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐProduct(ctx context.Context, sel ast.SelectionSet, v ent.Product) graphql.Marshaler {
@@ -5002,6 +5610,74 @@ func (ec *executionContext) marshalNReview2ᚖgithubᚗcomᚋjohannmunozᚋgql_p
 		return graphql.Null
 	}
 	return ec._Review(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNReviewConnection2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewConnection(ctx context.Context, sel ast.SelectionSet, v ent.ReviewConnection) graphql.Marshaler {
+	return ec._ReviewConnection(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNReviewConnection2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewConnection(ctx context.Context, sel ast.SelectionSet, v *ent.ReviewConnection) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ReviewConnection(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNReviewEdge2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewEdgeᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.ReviewEdge) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNReviewEdge2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewEdge(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNReviewEdge2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewEdge(ctx context.Context, sel ast.SelectionSet, v *ent.ReviewEdge) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ReviewEdge(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -5438,51 +6114,27 @@ func (ec *executionContext) marshalOCursor2ᚖgithubᚗcomᚋjohannmunozᚋgql_p
 	return v
 }
 
-func (ec *executionContext) marshalOReview2ᚕᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewᚄ(ctx context.Context, sel ast.SelectionSet, v []*ent.Review) graphql.Marshaler {
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalNReview2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReview(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
+	res := graphql.MarshalInt(*v)
+	return res
+}
 
+func (ec *executionContext) marshalOReview2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReview(ctx context.Context, sel ast.SelectionSet, v *ent.Review) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
 	}
-	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
+	return ec._Review(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

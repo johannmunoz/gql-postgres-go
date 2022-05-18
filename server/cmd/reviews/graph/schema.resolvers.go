@@ -59,8 +59,12 @@ func (r *productResolver) ID(ctx context.Context, obj *ent.Product) (string, err
 	return obj.ID.String(), nil
 }
 
-func (r *queryResolver) Reviews(ctx context.Context) ([]*ent.Review, error) {
-	return r.client.Review.Query().All(ctx)
+func (r *productResolver) Reviews(ctx context.Context, obj *ent.Product, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ReviewConnection, error) {
+	return r.client.Review.Query().Where(review.HasProductWith(product.IDEQ(obj.ID))).Paginate(ctx, after, first, before, last)
+}
+
+func (r *queryResolver) Reviews(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ReviewConnection, error) {
+	return r.client.Review.Query().Paginate(ctx, after, first, before, last)
 }
 
 func (r *queryResolver) Review(ctx context.Context, id string) (*ent.Review, error) {
@@ -77,6 +81,10 @@ func (r *reviewResolver) ID(ctx context.Context, obj *ent.Review) (string, error
 
 func (r *userResolver) ID(ctx context.Context, obj *ent.User) (string, error) {
 	return obj.ID.String(), nil
+}
+
+func (r *userResolver) Reviews(ctx context.Context, obj *ent.User, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ReviewConnection, error) {
+	return r.client.Review.Query().Where(review.HasAuthorWith(user.IDEQ(obj.ID))).Paginate(ctx, after, first, before, last)
 }
 
 // Manufacturer returns generated.ManufacturerResolver implementation.
