@@ -1,16 +1,32 @@
 extend type Query {
   me: User
-  users: [User!]
+  users(
+    before: Cursor
+    after: Cursor
+    first: Int
+    last: Int
+  ): UserConnection!
 }
 
 extend type Mutation {
   userCreate(input: NewUser!): User
 }
 
-type User @key(fields: "id") {
+type User implements Node @key(fields: "id") {
   id: ID!
   email: String!
   username: String!
+}
+
+type UserConnection {
+  edges: [UserEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type UserEdge {
+  node: User
+  cursor: Cursor!
 }
 
 input NewUser {
