@@ -15,8 +15,8 @@ import (
 	"github.com/johannmunoz/gql_postgres_go/ent/product"
 )
 
-func (r *manufacturerResolver) Products(ctx context.Context, obj *ent.Manufacturer, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ProductConnection, error) {
-	return r.client.Product.Query().Where(product.HasManufacturerWith(manufacturer.IDEQ(obj.ID))).Paginate(ctx, after, first, before, last)
+func (r *manufacturerResolver) Products(ctx context.Context, obj *ent.Manufacturer, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ProductOrder) (*ent.ProductConnection, error) {
+	return r.client.Product.Query().Where(product.HasManufacturerWith(manufacturer.IDEQ(obj.ID))).Paginate(ctx, after, first, before, last, ent.WithProductOrder(orderBy))
 }
 
 func (r *mutationResolver) ProductCreate(ctx context.Context, input model.NewProduct, manufacturerID string) (*ent.Product, error) {
@@ -35,8 +35,8 @@ func (r *productResolver) ID(ctx context.Context, obj *ent.Product) (string, err
 	return obj.ID.String(), nil
 }
 
-func (r *queryResolver) Products(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ProductConnection, error) {
-	return r.client.Product.Query().Paginate(ctx, after, first, before, last)
+func (r *queryResolver) Products(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ProductOrder) (*ent.ProductConnection, error) {
+	return r.client.Product.Query().Paginate(ctx, after, first, before, last, ent.WithProductOrder(orderBy))
 }
 
 func (r *queryResolver) Product(ctx context.Context, id string) (*ent.Product, error) {

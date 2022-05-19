@@ -4,6 +4,7 @@ extend type Query {
     after: Cursor
     first: Int
     last: Int
+    orderBy: ProductOrder
   ): ProductConnection!
   product(id: String!): Product!
 }
@@ -18,6 +19,7 @@ extend type Manufacturer {
     after: Cursor
     first: Int
     last: Int
+    orderBy: ProductOrder
   ): ProductConnection!
 }
 
@@ -43,4 +45,15 @@ input NewProduct {
   name: String!
   upc: String!
   price: Int!
+}
+
+enum ProductOrderField {
+  NAME
+  UPC
+  PRICE
+}
+
+input ProductOrder {
+  direction: OrderDirection!
+  field: ProductOrderField
 }

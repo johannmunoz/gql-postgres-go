@@ -57,7 +57,7 @@ type ComplexityRoot struct {
 	Manufacturer struct {
 		ID       func(childComplexity int) int
 		Name     func(childComplexity int) int
-		Products func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int) int
+		Products func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ProductOrder) int
 	}
 
 	ManufacturerConnection struct {
@@ -72,7 +72,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		ManufacturerCreate func(childComplexity int, input model.NewManufaturer) int
+		ManufacturerCreate func(childComplexity int, input model.NewManufacturer) int
 		ProductCreate      func(childComplexity int, input model.NewProduct, manufacturerID string) int
 	}
 
@@ -104,9 +104,9 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Manufacturer       func(childComplexity int, id string) int
-		Manufacturers      func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int) int
+		Manufacturers      func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ManufacturerOrder) int
 		Product            func(childComplexity int, id string) int
-		Products           func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int) int
+		Products           func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ProductOrder) int
 		__resolve__service func(childComplexity int) int
 		__resolve_entities func(childComplexity int, representations []map[string]interface{}) int
 	}
@@ -123,19 +123,19 @@ type EntityResolver interface {
 type ManufacturerResolver interface {
 	ID(ctx context.Context, obj *ent.Manufacturer) (string, error)
 
-	Products(ctx context.Context, obj *ent.Manufacturer, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ProductConnection, error)
+	Products(ctx context.Context, obj *ent.Manufacturer, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ProductOrder) (*ent.ProductConnection, error)
 }
 type MutationResolver interface {
-	ManufacturerCreate(ctx context.Context, input model.NewManufaturer) (*ent.Manufacturer, error)
+	ManufacturerCreate(ctx context.Context, input model.NewManufacturer) (*ent.Manufacturer, error)
 	ProductCreate(ctx context.Context, input model.NewProduct, manufacturerID string) (*ent.Product, error)
 }
 type ProductResolver interface {
 	ID(ctx context.Context, obj *ent.Product) (string, error)
 }
 type QueryResolver interface {
-	Manufacturers(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ManufacturerConnection, error)
+	Manufacturers(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ManufacturerOrder) (*ent.ManufacturerConnection, error)
 	Manufacturer(ctx context.Context, id string) (*ent.Manufacturer, error)
-	Products(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ProductConnection, error)
+	Products(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ProductOrder) (*ent.ProductConnection, error)
 	Product(ctx context.Context, id string) (*ent.Product, error)
 }
 
@@ -202,7 +202,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Manufacturer.Products(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int)), true
+		return e.complexity.Manufacturer.Products(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int), args["orderBy"].(*ent.ProductOrder)), true
 
 	case "ManufacturerConnection.edges":
 		if e.complexity.ManufacturerConnection.Edges == nil {
@@ -249,7 +249,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.ManufacturerCreate(childComplexity, args["input"].(model.NewManufaturer)), true
+		return e.complexity.Mutation.ManufacturerCreate(childComplexity, args["input"].(model.NewManufacturer)), true
 
 	case "Mutation.productCreate":
 		if e.complexity.Mutation.ProductCreate == nil {
@@ -383,7 +383,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Manufacturers(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int)), true
+		return e.complexity.Query.Manufacturers(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int), args["orderBy"].(*ent.ManufacturerOrder)), true
 
 	case "Query.product":
 		if e.complexity.Query.Product == nil {
@@ -407,7 +407,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Products(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int)), true
+		return e.complexity.Query.Products(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int), args["orderBy"].(*ent.ProductOrder)), true
 
 	case "Query._service":
 		if e.complexity.Query.__resolve__service == nil {
@@ -443,8 +443,10 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
-		ec.unmarshalInputNewManufaturer,
+		ec.unmarshalInputManufacturerOrder,
+		ec.unmarshalInputNewManufacturer,
 		ec.unmarshalInputNewProduct,
+		ec.unmarshalInputProductOrder,
 	)
 	first := true
 
@@ -511,12 +513,13 @@ var sources = []*ast.Source{
     after: Cursor
     first: Int
     last: Int
+    orderBy: ManufacturerOrder
   ): ManufacturerConnection!
   manufacturer(id: String!): Manufacturer!
 }
 
 extend type Mutation {
-  manufacturerCreate(input: NewManufaturer!): Manufacturer!
+  manufacturerCreate(input: NewManufacturer!): Manufacturer!
 }
 
 extend type Product {
@@ -539,8 +542,17 @@ type ManufacturerEdge {
   cursor: Cursor!
 }
 
-input NewManufaturer {
+input NewManufacturer {
   name: String!
+}
+
+enum ManufacturerOrderField {
+  NAME
+}
+
+input ManufacturerOrder {
+  direction: OrderDirection!
+  field: ManufacturerOrderField
 }
 `, BuiltIn: false},
 	{Name: "graph/schema/product.graphqls", Input: `extend type Query {
@@ -549,6 +561,7 @@ input NewManufaturer {
     after: Cursor
     first: Int
     last: Int
+    orderBy: ProductOrder
   ): ProductConnection!
   product(id: String!): Product!
 }
@@ -563,6 +576,7 @@ extend type Manufacturer {
     after: Cursor
     first: Int
     last: Int
+    orderBy: ProductOrder
   ): ProductConnection!
 }
 
@@ -589,6 +603,17 @@ input NewProduct {
   upc: String!
   price: Int!
 }
+
+enum ProductOrderField {
+  NAME
+  UPC
+  PRICE
+}
+
+input ProductOrder {
+  direction: OrderDirection!
+  field: ProductOrderField
+}
 `, BuiltIn: false},
 	{Name: "graph/schema/shared.graphqls", Input: `scalar Cursor
 
@@ -601,6 +626,11 @@ type PageInfo {
   hasPreviousPage: Boolean!
   startCursor: Cursor
   endCursor: Cursor
+}
+
+enum OrderDirection {
+  ASC
+  DESC
 }
 `, BuiltIn: false},
 	{Name: "federation/directives.graphql", Input: `
@@ -710,16 +740,25 @@ func (ec *executionContext) field_Manufacturer_products_args(ctx context.Context
 		}
 	}
 	args["last"] = arg3
+	var arg4 *ent.ProductOrder
+	if tmp, ok := rawArgs["orderBy"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("orderBy"))
+		arg4, err = ec.unmarshalOProductOrder2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐProductOrder(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["orderBy"] = arg4
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_manufacturerCreate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.NewManufaturer
+	var arg0 model.NewManufacturer
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNNewManufaturer2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewManufaturer(ctx, tmp)
+		arg0, err = ec.unmarshalNNewManufacturer2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewManufacturer(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -836,6 +875,15 @@ func (ec *executionContext) field_Query_manufacturers_args(ctx context.Context, 
 		}
 	}
 	args["last"] = arg3
+	var arg4 *ent.ManufacturerOrder
+	if tmp, ok := rawArgs["orderBy"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("orderBy"))
+		arg4, err = ec.unmarshalOManufacturerOrder2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐManufacturerOrder(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["orderBy"] = arg4
 	return args, nil
 }
 
@@ -893,6 +941,15 @@ func (ec *executionContext) field_Query_products_args(ctx context.Context, rawAr
 		}
 	}
 	args["last"] = arg3
+	var arg4 *ent.ProductOrder
+	if tmp, ok := rawArgs["orderBy"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("orderBy"))
+		arg4, err = ec.unmarshalOProductOrder2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐProductOrder(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["orderBy"] = arg4
 	return args, nil
 }
 
@@ -1166,7 +1223,7 @@ func (ec *executionContext) _Manufacturer_products(ctx context.Context, field gr
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Manufacturer().Products(rctx, obj, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int))
+		return ec.resolvers.Manufacturer().Products(rctx, obj, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.ProductOrder))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1470,7 +1527,7 @@ func (ec *executionContext) _Mutation_manufacturerCreate(ctx context.Context, fi
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ManufacturerCreate(rctx, fc.Args["input"].(model.NewManufaturer))
+		return ec.resolvers.Mutation().ManufacturerCreate(rctx, fc.Args["input"].(model.NewManufacturer))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2243,7 +2300,7 @@ func (ec *executionContext) _Query_manufacturers(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Manufacturers(rctx, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int))
+		return ec.resolvers.Query().Manufacturers(rctx, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.ManufacturerOrder))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2369,7 +2426,7 @@ func (ec *executionContext) _Query_products(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Products(rctx, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int))
+		return ec.resolvers.Query().Products(rctx, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.ProductOrder))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4531,8 +4588,39 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputNewManufaturer(ctx context.Context, obj interface{}) (model.NewManufaturer, error) {
-	var it model.NewManufaturer
+func (ec *executionContext) unmarshalInputManufacturerOrder(ctx context.Context, obj interface{}) (ent.ManufacturerOrder, error) {
+	var it ent.ManufacturerOrder
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "direction":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			it.Direction, err = ec.unmarshalNOrderDirection2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐOrderDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "field":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			it.Field, err = ec.unmarshalOManufacturerOrderField2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐManufacturerOrderField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNewManufacturer(ctx context.Context, obj interface{}) (model.NewManufacturer, error) {
+	var it model.NewManufacturer
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -4584,6 +4672,37 @@ func (ec *executionContext) unmarshalInputNewProduct(ctx context.Context, obj in
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("price"))
 			it.Price, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputProductOrder(ctx context.Context, obj interface{}) (ent.ProductOrder, error) {
+	var it ent.ProductOrder
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "direction":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			it.Direction, err = ec.unmarshalNOrderDirection2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐOrderDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "field":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			it.Field, err = ec.unmarshalOProductOrderField2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐProductOrderField(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -5768,14 +5887,24 @@ func (ec *executionContext) marshalNManufacturerEdge2ᚖgithubᚗcomᚋjohannmun
 	return ec._ManufacturerEdge(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNNewManufaturer2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewManufaturer(ctx context.Context, v interface{}) (model.NewManufaturer, error) {
-	res, err := ec.unmarshalInputNewManufaturer(ctx, v)
+func (ec *executionContext) unmarshalNNewManufacturer2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewManufacturer(ctx context.Context, v interface{}) (model.NewManufacturer, error) {
+	res, err := ec.unmarshalInputNewManufacturer(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNNewProduct2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋcmdᚋproductsᚋgraphᚋmodelᚐNewProduct(ctx context.Context, v interface{}) (model.NewProduct, error) {
 	res, err := ec.unmarshalInputNewProduct(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNOrderDirection2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐOrderDirection(ctx context.Context, v interface{}) (ent.OrderDirection, error) {
+	var res ent.OrderDirection
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNOrderDirection2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐOrderDirection(ctx context.Context, sel ast.SelectionSet, v ent.OrderDirection) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNPageInfo2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v ent.PageInfo) graphql.Marshaler {
@@ -6307,11 +6436,59 @@ func (ec *executionContext) marshalOManufacturer2ᚖgithubᚗcomᚋjohannmunoz�
 	return ec._Manufacturer(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalOManufacturerOrder2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐManufacturerOrder(ctx context.Context, v interface{}) (*ent.ManufacturerOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputManufacturerOrder(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOManufacturerOrderField2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐManufacturerOrderField(ctx context.Context, v interface{}) (*ent.ManufacturerOrderField, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(ent.ManufacturerOrderField)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOManufacturerOrderField2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐManufacturerOrderField(ctx context.Context, sel ast.SelectionSet, v *ent.ManufacturerOrderField) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
 func (ec *executionContext) marshalOProduct2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐProduct(ctx context.Context, sel ast.SelectionSet, v *ent.Product) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Product(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOProductOrder2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐProductOrder(ctx context.Context, v interface{}) (*ent.ProductOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputProductOrder(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOProductOrderField2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐProductOrderField(ctx context.Context, v interface{}) (*ent.ProductOrderField, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(ent.ProductOrderField)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOProductOrderField2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐProductOrderField(ctx context.Context, sel ast.SelectionSet, v *ent.ProductOrderField) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

@@ -10,3 +10,8 @@ type PageInfo {
   startCursor: Cursor
   endCursor: Cursor
 }
+
+enum OrderDirection {
+  ASC
+  DESC
+}

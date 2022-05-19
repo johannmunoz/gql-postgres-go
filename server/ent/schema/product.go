@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"entgo.io/contrib/entgql"
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
@@ -17,9 +18,15 @@ func (Product) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New),
-		field.String("name"),
-		field.String("upc"),
-		field.Int("price").Default(0),
+		field.String("name").Annotations(
+			entgql.OrderField("NAME"),
+		),
+		field.String("upc").Annotations(
+			entgql.OrderField("UPC"),
+		),
+		field.Int("price").Default(0).Annotations(
+			entgql.OrderField("PRICE"),
+		),
 	}
 }
 

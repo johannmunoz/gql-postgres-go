@@ -4,12 +4,13 @@ extend type Query {
     after: Cursor
     first: Int
     last: Int
+    orderBy: ManufacturerOrder
   ): ManufacturerConnection!
   manufacturer(id: String!): Manufacturer!
 }
 
 extend type Mutation {
-  manufacturerCreate(input: NewManufaturer!): Manufacturer!
+  manufacturerCreate(input: NewManufacturer!): Manufacturer!
 }
 
 extend type Product {
@@ -32,6 +33,15 @@ type ManufacturerEdge {
   cursor: Cursor!
 }
 
-input NewManufaturer {
+input NewManufacturer {
   name: String!
+}
+
+enum ManufacturerOrderField {
+  NAME
+}
+
+input ManufacturerOrder {
+  direction: OrderDirection!
+  field: ManufacturerOrderField
 }

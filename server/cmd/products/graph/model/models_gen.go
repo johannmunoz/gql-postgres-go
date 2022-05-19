@@ -2,7 +2,7 @@
 
 package model
 
-type NewManufaturer struct {
+type NewManufacturer struct {
 	Name string `json:"name"`
 }
 

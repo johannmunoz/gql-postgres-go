@@ -429,6 +429,49 @@ func (m *ManufacturerQuery) Paginate(
 	return conn, nil
 }
 
+var (
+	// ManufacturerOrderFieldName orders Manufacturer by name.
+	ManufacturerOrderFieldName = &ManufacturerOrderField{
+		field: manufacturer.FieldName,
+		toCursor: func(m *Manufacturer) Cursor {
+			return Cursor{
+				ID:    m.ID,
+				Value: m.Name,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f ManufacturerOrderField) String() string {
+	var str string
+	switch f.field {
+	case manufacturer.FieldName:
+		str = "NAME"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f ManufacturerOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *ManufacturerOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("ManufacturerOrderField %T must be a string", v)
+	}
+	switch str {
+	case "NAME":
+		*f = *ManufacturerOrderFieldName
+	default:
+		return fmt.Errorf("%s is not a valid ManufacturerOrderField", str)
+	}
+	return nil
+}
+
 // ManufacturerOrderField defines the ordering field of Manufacturer.
 type ManufacturerOrderField struct {
 	field    string
@@ -654,6 +697,77 @@ func (pr *ProductQuery) Paginate(
 	}
 
 	return conn, nil
+}
+
+var (
+	// ProductOrderFieldName orders Product by name.
+	ProductOrderFieldName = &ProductOrderField{
+		field: product.FieldName,
+		toCursor: func(pr *Product) Cursor {
+			return Cursor{
+				ID:    pr.ID,
+				Value: pr.Name,
+			}
+		},
+	}
+	// ProductOrderFieldUpc orders Product by upc.
+	ProductOrderFieldUpc = &ProductOrderField{
+		field: product.FieldUpc,
+		toCursor: func(pr *Product) Cursor {
+			return Cursor{
+				ID:    pr.ID,
+				Value: pr.Upc,
+			}
+		},
+	}
+	// ProductOrderFieldPrice orders Product by price.
+	ProductOrderFieldPrice = &ProductOrderField{
+		field: product.FieldPrice,
+		toCursor: func(pr *Product) Cursor {
+			return Cursor{
+				ID:    pr.ID,
+				Value: pr.Price,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f ProductOrderField) String() string {
+	var str string
+	switch f.field {
+	case product.FieldName:
+		str = "NAME"
+	case product.FieldUpc:
+		str = "UPC"
+	case product.FieldPrice:
+		str = "PRICE"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f ProductOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *ProductOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("ProductOrderField %T must be a string", v)
+	}
+	switch str {
+	case "NAME":
+		*f = *ProductOrderFieldName
+	case "UPC":
+		*f = *ProductOrderFieldUpc
+	case "PRICE":
+		*f = *ProductOrderFieldPrice
+	default:
+		return fmt.Errorf("%s is not a valid ProductOrderField", str)
+	}
+	return nil
 }
 
 // ProductOrderField defines the ordering field of Product.
