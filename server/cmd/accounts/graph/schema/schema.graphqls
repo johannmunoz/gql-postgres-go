@@ -5,6 +5,7 @@ extend type Query {
     after: Cursor
     first: Int
     last: Int
+    orderBy: UserOrder
   ): UserConnection!
 }
 
@@ -27,6 +28,16 @@ type UserConnection {
 type UserEdge {
   node: User
   cursor: Cursor!
+}
+
+enum UserOrderField {
+  email
+  username
+}
+
+input UserOrder {
+  direction: OrderDirection!
+  field: UserOrderField
 }
 
 input NewUser {

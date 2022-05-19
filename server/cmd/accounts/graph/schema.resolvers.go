@@ -20,8 +20,8 @@ func (r *queryResolver) Me(ctx context.Context) (*ent.User, error) {
 	panic(fmt.Errorf("Me not implemented"))
 }
 
-func (r *queryResolver) Users(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.UserConnection, error) {
-	return r.client.User.Query().Paginate(ctx, after, first, before, last)
+func (r *queryResolver) Users(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.UserOrder) (*ent.UserConnection, error) {
+	return r.client.User.Query().Paginate(ctx, after, first, before, last, ent.WithUserOrder(orderBy))
 }
 
 func (r *userResolver) ID(ctx context.Context, obj *ent.User) (string, error) {
