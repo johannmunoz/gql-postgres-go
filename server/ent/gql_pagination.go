@@ -997,6 +997,49 @@ func (r *ReviewQuery) Paginate(
 	return conn, nil
 }
 
+var (
+	// ReviewOrderFieldBody orders Review by body.
+	ReviewOrderFieldBody = &ReviewOrderField{
+		field: review.FieldBody,
+		toCursor: func(r *Review) Cursor {
+			return Cursor{
+				ID:    r.ID,
+				Value: r.Body,
+			}
+		},
+	}
+)
+
+// String implement fmt.Stringer interface.
+func (f ReviewOrderField) String() string {
+	var str string
+	switch f.field {
+	case review.FieldBody:
+		str = "body"
+	}
+	return str
+}
+
+// MarshalGQL implements graphql.Marshaler interface.
+func (f ReviewOrderField) MarshalGQL(w io.Writer) {
+	io.WriteString(w, strconv.Quote(f.String()))
+}
+
+// UnmarshalGQL implements graphql.Unmarshaler interface.
+func (f *ReviewOrderField) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("ReviewOrderField %T must be a string", v)
+	}
+	switch str {
+	case "body":
+		*f = *ReviewOrderFieldBody
+	default:
+		return fmt.Errorf("%s is not a valid ReviewOrderField", str)
+	}
+	return nil
+}
+
 // ReviewOrderField defines the ordering field of Review.
 type ReviewOrderField struct {
 	field    string

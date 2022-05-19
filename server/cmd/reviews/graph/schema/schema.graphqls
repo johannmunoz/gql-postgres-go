@@ -4,6 +4,7 @@ extend type Query {
     after: Cursor
     first: Int
     last: Int
+    orderBy: ReviewOrder
   ): ReviewConnection!
   review(id: String!): Review!
 }
@@ -33,6 +34,7 @@ extend type User @key(fields: "id") {
     after: Cursor
     first: Int
     last: Int
+    orderBy: ReviewOrder
   ): ReviewConnection!
 }
 
@@ -48,6 +50,7 @@ extend type Product @key(fields: "id") {
     after: Cursor
     first: Int
     last: Int
+    orderBy: ReviewOrder
   ): ReviewConnection!
 }
 
@@ -64,4 +67,13 @@ type ReviewEdge {
 
 input NewReview {
   body: String!
+}
+
+enum ReviewOrderField {
+  body
+}
+
+input ReviewOrder {
+  direction: OrderDirection!
+  field: ReviewOrderField
 }

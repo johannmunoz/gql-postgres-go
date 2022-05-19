@@ -76,12 +76,12 @@ type ComplexityRoot struct {
 	Product struct {
 		ID           func(childComplexity int) int
 		Manufacturer func(childComplexity int) int
-		Reviews      func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int) int
+		Reviews      func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ReviewOrder) int
 	}
 
 	Query struct {
 		Review             func(childComplexity int, id string) int
-		Reviews            func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int) int
+		Reviews            func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ReviewOrder) int
 		__resolve__service func(childComplexity int) int
 		__resolve_entities func(childComplexity int, representations []map[string]interface{}) int
 	}
@@ -107,7 +107,7 @@ type ComplexityRoot struct {
 	User struct {
 		Email    func(childComplexity int) int
 		ID       func(childComplexity int) int
-		Reviews  func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int) int
+		Reviews  func(childComplexity int, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ReviewOrder) int
 		Username func(childComplexity int) int
 	}
 
@@ -131,10 +131,10 @@ type MutationResolver interface {
 type ProductResolver interface {
 	ID(ctx context.Context, obj *ent.Product) (string, error)
 
-	Reviews(ctx context.Context, obj *ent.Product, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ReviewConnection, error)
+	Reviews(ctx context.Context, obj *ent.Product, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ReviewOrder) (*ent.ReviewConnection, error)
 }
 type QueryResolver interface {
-	Reviews(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ReviewConnection, error)
+	Reviews(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ReviewOrder) (*ent.ReviewConnection, error)
 	Review(ctx context.Context, id string) (*ent.Review, error)
 }
 type ReviewResolver interface {
@@ -143,7 +143,7 @@ type ReviewResolver interface {
 type UserResolver interface {
 	ID(ctx context.Context, obj *ent.User) (string, error)
 
-	Reviews(ctx context.Context, obj *ent.User, before *ent.Cursor, after *ent.Cursor, first *int, last *int) (*ent.ReviewConnection, error)
+	Reviews(ctx context.Context, obj *ent.User, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ReviewOrder) (*ent.ReviewConnection, error)
 }
 
 type executableSchema struct {
@@ -280,7 +280,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Product.Reviews(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int)), true
+		return e.complexity.Product.Reviews(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int), args["orderBy"].(*ent.ReviewOrder)), true
 
 	case "Query.review":
 		if e.complexity.Query.Review == nil {
@@ -304,7 +304,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Reviews(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int)), true
+		return e.complexity.Query.Reviews(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int), args["orderBy"].(*ent.ReviewOrder)), true
 
 	case "Query._service":
 		if e.complexity.Query.__resolve__service == nil {
@@ -412,7 +412,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.User.Reviews(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int)), true
+		return e.complexity.User.Reviews(childComplexity, args["before"].(*ent.Cursor), args["after"].(*ent.Cursor), args["first"].(*int), args["last"].(*int), args["orderBy"].(*ent.ReviewOrder)), true
 
 	case "User.username":
 		if e.complexity.User.Username == nil {
@@ -437,6 +437,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	ec := executionContext{rc, e}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputNewReview,
+		ec.unmarshalInputReviewOrder,
 	)
 	first := true
 
@@ -503,6 +504,7 @@ var sources = []*ast.Source{
     after: Cursor
     first: Int
     last: Int
+    orderBy: ReviewOrder
   ): ReviewConnection!
   review(id: String!): Review!
 }
@@ -532,6 +534,7 @@ extend type User @key(fields: "id") {
     after: Cursor
     first: Int
     last: Int
+    orderBy: ReviewOrder
   ): ReviewConnection!
 }
 
@@ -547,6 +550,7 @@ extend type Product @key(fields: "id") {
     after: Cursor
     first: Int
     last: Int
+    orderBy: ReviewOrder
   ): ReviewConnection!
 }
 
@@ -564,6 +568,15 @@ type ReviewEdge {
 input NewReview {
   body: String!
 }
+
+enum ReviewOrderField {
+  body
+}
+
+input ReviewOrder {
+  direction: OrderDirection!
+  field: ReviewOrderField
+}
 `, BuiltIn: false},
 	{Name: "graph/schema/shared.graphqls", Input: `scalar Cursor
 
@@ -576,6 +589,11 @@ type PageInfo {
   hasPreviousPage: Boolean!
   startCursor: Cursor
   endCursor: Cursor
+}
+
+enum OrderDirection {
+  ASC
+  DESC
 }
 `, BuiltIn: false},
 	{Name: "federation/directives.graphql", Input: `
@@ -749,6 +767,15 @@ func (ec *executionContext) field_Product_reviews_args(ctx context.Context, rawA
 		}
 	}
 	args["last"] = arg3
+	var arg4 *ent.ReviewOrder
+	if tmp, ok := rawArgs["orderBy"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("orderBy"))
+		arg4, err = ec.unmarshalOReviewOrder2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewOrder(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["orderBy"] = arg4
 	return args, nil
 }
 
@@ -836,6 +863,15 @@ func (ec *executionContext) field_Query_reviews_args(ctx context.Context, rawArg
 		}
 	}
 	args["last"] = arg3
+	var arg4 *ent.ReviewOrder
+	if tmp, ok := rawArgs["orderBy"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("orderBy"))
+		arg4, err = ec.unmarshalOReviewOrder2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewOrder(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["orderBy"] = arg4
 	return args, nil
 }
 
@@ -878,6 +914,15 @@ func (ec *executionContext) field_User_reviews_args(ctx context.Context, rawArgs
 		}
 	}
 	args["last"] = arg3
+	var arg4 *ent.ReviewOrder
+	if tmp, ok := rawArgs["orderBy"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("orderBy"))
+		arg4, err = ec.unmarshalOReviewOrder2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewOrder(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["orderBy"] = arg4
 	return args, nil
 }
 
@@ -1552,7 +1597,7 @@ func (ec *executionContext) _Product_reviews(ctx context.Context, field graphql.
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Product().Reviews(rctx, obj, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int))
+		return ec.resolvers.Product().Reviews(rctx, obj, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.ReviewOrder))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1615,7 +1660,7 @@ func (ec *executionContext) _Query_reviews(ctx context.Context, field graphql.Co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Reviews(rctx, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int))
+		return ec.resolvers.Query().Reviews(rctx, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.ReviewOrder))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2544,7 +2589,7 @@ func (ec *executionContext) _User_reviews(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().Reviews(rctx, obj, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int))
+		return ec.resolvers.User().Reviews(rctx, obj, fc.Args["before"].(*ent.Cursor), fc.Args["after"].(*ent.Cursor), fc.Args["first"].(*int), fc.Args["last"].(*int), fc.Args["orderBy"].(*ent.ReviewOrder))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4430,6 +4475,37 @@ func (ec *executionContext) unmarshalInputNewReview(ctx context.Context, obj int
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputReviewOrder(ctx context.Context, obj interface{}) (ent.ReviewOrder, error) {
+	var it ent.ReviewOrder
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "direction":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("direction"))
+			it.Direction, err = ec.unmarshalNOrderDirection2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐOrderDirection(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "field":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			it.Field, err = ec.unmarshalOReviewOrderField2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewOrderField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -5580,6 +5656,16 @@ func (ec *executionContext) unmarshalNNewReview2githubᚗcomᚋjohannmunozᚋgql
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNOrderDirection2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐOrderDirection(ctx context.Context, v interface{}) (ent.OrderDirection, error) {
+	var res ent.OrderDirection
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNOrderDirection2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐOrderDirection(ctx context.Context, sel ast.SelectionSet, v ent.OrderDirection) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNPageInfo2githubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v ent.PageInfo) graphql.Marshaler {
 	return ec._PageInfo(ctx, sel, &v)
 }
@@ -6135,6 +6221,30 @@ func (ec *executionContext) marshalOReview2ᚖgithubᚗcomᚋjohannmunozᚋgql_p
 		return graphql.Null
 	}
 	return ec._Review(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOReviewOrder2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewOrder(ctx context.Context, v interface{}) (*ent.ReviewOrder, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputReviewOrder(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOReviewOrderField2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewOrderField(ctx context.Context, v interface{}) (*ent.ReviewOrderField, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(ent.ReviewOrderField)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOReviewOrderField2ᚖgithubᚗcomᚋjohannmunozᚋgql_postgres_goᚋentᚐReviewOrderField(ctx context.Context, sel ast.SelectionSet, v *ent.ReviewOrderField) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {
