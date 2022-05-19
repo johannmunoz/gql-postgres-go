@@ -547,7 +547,7 @@ input NewManufacturer {
 }
 
 enum ManufacturerOrderField {
-  NAME
+  name
 }
 
 input ManufacturerOrder {
@@ -605,9 +605,9 @@ input NewProduct {
 }
 
 enum ProductOrderField {
-  NAME
-  UPC
-  PRICE
+  name
+  upc
+  price
 }
 
 input ProductOrder {
@@ -629,8 +629,8 @@ type PageInfo {
 }
 
 enum OrderDirection {
-  ASC
-  DESC
+  asc
+  desc
 }
 `, BuiltIn: false},
 	{Name: "federation/directives.graphql", Input: `

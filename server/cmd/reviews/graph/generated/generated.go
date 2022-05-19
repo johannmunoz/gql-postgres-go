@@ -592,8 +592,8 @@ type PageInfo {
 }
 
 enum OrderDirection {
-  ASC
-  DESC
+  asc
+  desc
 }
 `, BuiltIn: false},
 	{Name: "federation/directives.graphql", Input: `

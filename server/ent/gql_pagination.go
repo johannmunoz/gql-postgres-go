@@ -447,7 +447,7 @@ func (f ManufacturerOrderField) String() string {
 	var str string
 	switch f.field {
 	case manufacturer.FieldName:
-		str = "NAME"
+		str = "name"
 	}
 	return str
 }
@@ -464,7 +464,7 @@ func (f *ManufacturerOrderField) UnmarshalGQL(v interface{}) error {
 		return fmt.Errorf("ManufacturerOrderField %T must be a string", v)
 	}
 	switch str {
-	case "NAME":
+	case "name":
 		*f = *ManufacturerOrderFieldName
 	default:
 		return fmt.Errorf("%s is not a valid ManufacturerOrderField", str)
@@ -737,11 +737,11 @@ func (f ProductOrderField) String() string {
 	var str string
 	switch f.field {
 	case product.FieldName:
-		str = "NAME"
+		str = "name"
 	case product.FieldUpc:
-		str = "UPC"
+		str = "upc"
 	case product.FieldPrice:
-		str = "PRICE"
+		str = "price"
 	}
 	return str
 }
@@ -758,11 +758,11 @@ func (f *ProductOrderField) UnmarshalGQL(v interface{}) error {
 		return fmt.Errorf("ProductOrderField %T must be a string", v)
 	}
 	switch str {
-	case "NAME":
+	case "name":
 		*f = *ProductOrderFieldName
-	case "UPC":
+	case "upc":
 		*f = *ProductOrderFieldUpc
-	case "PRICE":
+	case "price":
 		*f = *ProductOrderFieldPrice
 	default:
 		return fmt.Errorf("%s is not a valid ProductOrderField", str)

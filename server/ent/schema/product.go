@@ -19,13 +19,13 @@ func (Product) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New),
 		field.String("name").Annotations(
-			entgql.OrderField("NAME"),
+			entgql.OrderField("name"),
 		),
 		field.String("upc").Annotations(
-			entgql.OrderField("UPC"),
+			entgql.OrderField("upc"),
 		),
 		field.Int("price").Default(0).Annotations(
-			entgql.OrderField("PRICE"),
+			entgql.OrderField("price"),
 		),
 	}
 }

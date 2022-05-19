@@ -48,9 +48,9 @@ input NewProduct {
 }
 
 enum ProductOrderField {
-  NAME
-  UPC
-  PRICE
+  name
+  upc
+  price
 }
 
 input ProductOrder {

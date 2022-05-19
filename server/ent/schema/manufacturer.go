@@ -19,7 +19,7 @@ func (Manufacturer) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New),
 		field.String("name").Annotations(
-			entgql.OrderField("NAME"),
+			entgql.OrderField("name"),
 		),
 	}
 }
