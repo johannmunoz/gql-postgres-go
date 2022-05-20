@@ -5,6 +5,7 @@ extend type Query {
     first: Int
     last: Int
     orderBy: ReviewOrder
+    where: ReviewWhereInput
   ): ReviewConnection!
   review(id: String!): Review!
 }
@@ -35,6 +36,7 @@ extend type User @key(fields: "id") {
     first: Int
     last: Int
     orderBy: ReviewOrder
+    where: ReviewWhereInput
   ): ReviewConnection!
 }
 
@@ -51,6 +53,7 @@ extend type Product @key(fields: "id") {
     first: Int
     last: Int
     orderBy: ReviewOrder
+    where: ReviewWhereInput
   ): ReviewConnection!
 }
 

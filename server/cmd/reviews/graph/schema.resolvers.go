@@ -16,10 +16,6 @@ import (
 	"github.com/johannmunoz/gql_postgres_go/ent/user"
 )
 
-func (r *manufacturerResolver) ID(ctx context.Context, obj *ent.Manufacturer) (string, error) {
-	return obj.ID.String(), nil
-}
-
 func (r *mutationResolver) ReviewCreate(ctx context.Context, input model.NewReview, authorID string, productID string) (*ent.Review, error) {
 	authorUUID, err := uuid.Parse(authorID)
 	if err != nil {
@@ -55,16 +51,12 @@ func (r *mutationResolver) ReviewDelete(ctx context.Context, id string) (bool, e
 	return true, nil
 }
 
-func (r *productResolver) ID(ctx context.Context, obj *ent.Product) (string, error) {
-	return obj.ID.String(), nil
+func (r *productResolver) Reviews(ctx context.Context, obj *ent.Product, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ReviewOrder, where *ent.ReviewWhereInput) (*ent.ReviewConnection, error) {
+	return r.client.Review.Query().Where(review.HasProductWith(product.IDEQ(obj.ID))).Paginate(ctx, after, first, before, last, ent.WithReviewOrder(orderBy), ent.WithReviewFilter(where.Filter))
 }
 
-func (r *productResolver) Reviews(ctx context.Context, obj *ent.Product, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ReviewOrder) (*ent.ReviewConnection, error) {
-	return r.client.Review.Query().Where(review.HasProductWith(product.IDEQ(obj.ID))).Paginate(ctx, after, first, before, last, ent.WithReviewOrder(orderBy))
-}
-
-func (r *queryResolver) Reviews(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ReviewOrder) (*ent.ReviewConnection, error) {
-	return r.client.Review.Query().Paginate(ctx, after, first, before, last, ent.WithReviewOrder(orderBy))
+func (r *queryResolver) Reviews(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ReviewOrder, where *ent.ReviewWhereInput) (*ent.ReviewConnection, error) {
+	return r.client.Review.Query().Paginate(ctx, after, first, before, last, ent.WithReviewOrder(orderBy), ent.WithReviewFilter(where.Filter))
 }
 
 func (r *queryResolver) Review(ctx context.Context, id string) (*ent.Review, error) {
@@ -79,16 +71,9 @@ func (r *reviewResolver) ID(ctx context.Context, obj *ent.Review) (string, error
 	return obj.ID.String(), nil
 }
 
-func (r *userResolver) ID(ctx context.Context, obj *ent.User) (string, error) {
-	return obj.ID.String(), nil
+func (r *userResolver) Reviews(ctx context.Context, obj *ent.User, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ReviewOrder, where *ent.ReviewWhereInput) (*ent.ReviewConnection, error) {
+	return r.client.Review.Query().Where(review.HasAuthorWith(user.IDEQ(obj.ID))).Paginate(ctx, after, first, before, last, ent.WithReviewOrder(orderBy), ent.WithReviewFilter(where.Filter))
 }
-
-func (r *userResolver) Reviews(ctx context.Context, obj *ent.User, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ReviewOrder) (*ent.ReviewConnection, error) {
-	return r.client.Review.Query().Where(review.HasAuthorWith(user.IDEQ(obj.ID))).Paginate(ctx, after, first, before, last, ent.WithReviewOrder(orderBy))
-}
-
-// Manufacturer returns generated.ManufacturerResolver implementation.
-func (r *Resolver) Manufacturer() generated.ManufacturerResolver { return &manufacturerResolver{r} }
 
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
@@ -105,7 +90,6 @@ func (r *Resolver) Review() generated.ReviewResolver { return &reviewResolver{r}
 // User returns generated.UserResolver implementation.
 func (r *Resolver) User() generated.UserResolver { return &userResolver{r} }
 
-type manufacturerResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type productResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

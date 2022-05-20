@@ -15,12 +15,8 @@ import (
 	"github.com/johannmunoz/gql_postgres_go/ent/user"
 )
 
-func (r *entityResolver) FindProductByID(ctx context.Context, id string) (*ent.Product, error) {
-	productId, err := uuid.Parse(id)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return r.client.Product.Query().Where(product.IDEQ(productId)).Only(ctx)
+func (r *entityResolver) FindProductByID(ctx context.Context, id uuid.UUID) (*ent.Product, error) {
+	return r.client.Product.Query().Where(product.IDEQ(id)).Only(ctx)
 }
 
 func (r *entityResolver) FindReviewByID(ctx context.Context, id string) (*ent.Review, error) {
@@ -31,12 +27,8 @@ func (r *entityResolver) FindReviewByID(ctx context.Context, id string) (*ent.Re
 	return r.client.Review.Query().Where(review.IDEQ(reviewId)).Only(ctx)
 }
 
-func (r *entityResolver) FindUserByID(ctx context.Context, id string) (*ent.User, error) {
-	userId, err := uuid.Parse(id)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return r.client.User.Query().Where(user.IDEQ(userId)).Only(ctx)
+func (r *entityResolver) FindUserByID(ctx context.Context, id uuid.UUID) (*ent.User, error) {
+	return r.client.User.Query().Where(user.IDEQ(id)).Only(ctx)
 }
 
 // Entity returns generated.EntityResolver implementation.
