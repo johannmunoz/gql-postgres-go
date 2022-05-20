@@ -88,7 +88,7 @@ func (ec *executionContext) __resolve_entities(ctx context.Context, representati
 			switch resolverName {
 
 			case "findManufacturerByID":
-				id0, err := ec.unmarshalNID2string(ctx, rep["id"])
+				id0, err := ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, rep["id"])
 				if err != nil {
 					return fmt.Errorf(`unmarshalling param 0 for findManufacturerByID(): %w`, err)
 				}
@@ -108,7 +108,7 @@ func (ec *executionContext) __resolve_entities(ctx context.Context, representati
 			switch resolverName {
 
 			case "findProductByID":
-				id0, err := ec.unmarshalNID2string(ctx, rep["id"])
+				id0, err := ec.unmarshalNID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, rep["id"])
 				if err != nil {
 					return fmt.Errorf(`unmarshalling param 0 for findProductByID(): %w`, err)
 				}

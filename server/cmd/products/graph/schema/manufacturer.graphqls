@@ -5,6 +5,7 @@ extend type Query {
     first: Int
     last: Int
     orderBy: ManufacturerOrder
+    where: ManufacturerWhereInput,
   ): ManufacturerConnection!
   manufacturer(id: String!): Manufacturer!
 }

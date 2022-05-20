@@ -1,6 +1,7 @@
 # Where are all the schema files located? globs are supported eg  src/**/*.graphqls
 schema:
   - graph/schema/*.graphqls
+  - ../../ent/ent.graphql
 
 # Where should the generated server code go?
 exec:
@@ -44,10 +45,7 @@ autobind:
 models:
   ID:
     model:
-      - github.com/99designs/gqlgen/graphql.ID
-      - github.com/99designs/gqlgen/graphql.Int
-      - github.com/99designs/gqlgen/graphql.Int64
-      - github.com/99designs/gqlgen/graphql.Int32
+      - github.com/johannmunoz/gql_postgres_go/ent/schema/uuidgql.UUID
   Int:
     model:
       - github.com/99designs/gqlgen/graphql.Int

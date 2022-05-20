@@ -14,16 +14,12 @@ import (
 	"github.com/johannmunoz/gql_postgres_go/ent/manufacturer"
 )
 
-func (r *manufacturerResolver) ID(ctx context.Context, obj *ent.Manufacturer) (string, error) {
-	return obj.ID.String(), nil
-}
-
 func (r *mutationResolver) ManufacturerCreate(ctx context.Context, input model.NewManufacturer) (*ent.Manufacturer, error) {
 	return r.client.Manufacturer.Create().SetName(input.Name).Save(ctx)
 }
 
-func (r *queryResolver) Manufacturers(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ManufacturerOrder) (*ent.ManufacturerConnection, error) {
-	return r.client.Manufacturer.Query().Paginate(ctx, after, first, before, last, ent.WithManufacturerOrder(orderBy))
+func (r *queryResolver) Manufacturers(ctx context.Context, before *ent.Cursor, after *ent.Cursor, first *int, last *int, orderBy *ent.ManufacturerOrder, where *ent.ManufacturerWhereInput) (*ent.ManufacturerConnection, error) {
+	return r.client.Manufacturer.Query().Paginate(ctx, after, first, before, last, ent.WithManufacturerOrder(orderBy), ent.WithManufacturerFilter(where.Filter))
 }
 
 func (r *queryResolver) Manufacturer(ctx context.Context, id string) (*ent.Manufacturer, error) {

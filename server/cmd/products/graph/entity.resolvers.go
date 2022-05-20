@@ -5,7 +5,6 @@ package graph
 
 import (
 	"context"
-	"log"
 
 	"github.com/google/uuid"
 	"github.com/johannmunoz/gql_postgres_go/cmd/products/graph/generated"
@@ -14,20 +13,12 @@ import (
 	"github.com/johannmunoz/gql_postgres_go/ent/product"
 )
 
-func (r *entityResolver) FindManufacturerByID(ctx context.Context, id string) (*ent.Manufacturer, error) {
-	manufacturerId, err := uuid.Parse(id)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return r.client.Manufacturer.Query().Where(manufacturer.IDEQ(manufacturerId)).Only(ctx)
+func (r *entityResolver) FindManufacturerByID(ctx context.Context, id uuid.UUID) (*ent.Manufacturer, error) {
+	return r.client.Manufacturer.Query().Where(manufacturer.IDEQ(id)).Only(ctx)
 }
 
-func (r *entityResolver) FindProductByID(ctx context.Context, id string) (*ent.Product, error) {
-	productId, err := uuid.Parse(id)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return r.client.Product.Query().Where(product.IDEQ(productId)).Only(ctx)
+func (r *entityResolver) FindProductByID(ctx context.Context, id uuid.UUID) (*ent.Product, error) {
+	return r.client.Product.Query().Where(product.IDEQ(id)).Only(ctx)
 }
 
 // Entity returns generated.EntityResolver implementation.

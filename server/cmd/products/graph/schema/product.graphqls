@@ -5,6 +5,7 @@ extend type Query {
     first: Int
     last: Int
     orderBy: ProductOrder
+    where: ProductWhereInput
   ): ProductConnection!
   product(id: String!): Product!
 }
@@ -20,6 +21,7 @@ extend type Manufacturer {
     first: Int
     last: Int
     orderBy: ProductOrder
+    where: ProductWhereInput
   ): ProductConnection!
 }
 
