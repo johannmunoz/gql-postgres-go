@@ -116,6 +116,9 @@ func (m *Manufacturer) String() string {
 	return builder.String()
 }
 
+// IsEntity implement fedruntime.Entity
+func (m Manufacturer) IsEntity() {}
+
 // Manufacturers is a parsable slice of Manufacturer.
 type Manufacturers []*Manufacturer
 
@@ -124,5 +127,3 @@ func (m Manufacturers) config(cfg config) {
 		m[_i].config = cfg
 	}
 }
-
-func (Manufacturer) IsEntity() {}

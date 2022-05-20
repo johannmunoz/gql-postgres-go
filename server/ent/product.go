@@ -170,6 +170,9 @@ func (pr *Product) String() string {
 	return builder.String()
 }
 
+// IsEntity implement fedruntime.Entity
+func (pr Product) IsEntity() {}
+
 // Products is a parsable slice of Product.
 type Products []*Product
 
@@ -178,5 +181,3 @@ func (pr Products) config(cfg config) {
 		pr[_i].config = cfg
 	}
 }
-
-func (Product) IsEntity() {}

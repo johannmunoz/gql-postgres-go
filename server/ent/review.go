@@ -164,6 +164,9 @@ func (r *Review) String() string {
 	return builder.String()
 }
 
+// IsEntity implement fedruntime.Entity
+func (r Review) IsEntity() {}
+
 // Reviews is a parsable slice of Review.
 type Reviews []*Review
 
@@ -172,5 +175,3 @@ func (r Reviews) config(cfg config) {
 		r[_i].config = cfg
 	}
 }
-
-func (Review) IsEntity() {}
