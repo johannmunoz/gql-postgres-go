@@ -5,7 +5,6 @@ package graph
 
 import (
 	"context"
-	"log"
 
 	"github.com/google/uuid"
 	"github.com/johannmunoz/gql_postgres_go/cmd/accounts/graph/generated"
@@ -13,12 +12,8 @@ import (
 	"github.com/johannmunoz/gql_postgres_go/ent/user"
 )
 
-func (r *entityResolver) FindUserByID(ctx context.Context, id string) (*ent.User, error) {
-	userId, err := uuid.Parse(id)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return r.client.User.Query().Where(user.IDEQ(userId)).Only(ctx)
+func (r *entityResolver) FindUserByID(ctx context.Context, id uuid.UUID) (*ent.User, error) {
+	return r.client.User.Query().Where(user.IDEQ(id)).Only(ctx)
 }
 
 // Entity returns generated.EntityResolver implementation.

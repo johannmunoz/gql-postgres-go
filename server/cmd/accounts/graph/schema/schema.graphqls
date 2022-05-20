@@ -6,6 +6,7 @@ extend type Query {
     first: Int
     last: Int
     orderBy: UserOrder
+    where: UserWhereInput,
   ): UserConnection!
 }
 
