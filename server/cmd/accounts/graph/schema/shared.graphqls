@@ -12,6 +12,6 @@ type PageInfo {
 }
 
 enum OrderDirection {
-  asc
-  desc
+  ASC
+  DESC
 }

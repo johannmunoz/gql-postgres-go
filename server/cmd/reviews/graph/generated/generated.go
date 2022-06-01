@@ -593,8 +593,8 @@ type PageInfo {
 }
 
 enum OrderDirection {
-  asc
-  desc
+  ASC
+  DESC
 }
 `, BuiltIn: false},
 	{Name: "../../ent/ent.graphql", Input: `"""
